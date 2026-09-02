@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>АФЛ — Админ-панель</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body class="admin-body">
+
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>🔐 Вход в админ-панель</h2>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" required placeholder="admin@afl.ru">
+      </div>
+      <div class="form-group">
+        <label>Пароль</label>
+        <input type="password" id="loginPassword" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn-save">Войти</button>
+    </form>
+    <p style="margin-top:14px;font-size:0.8rem;color:var(--text-muted);line-height:1.4">
+      Только аккаунт администратора.<br>
+      Регистрация болельщиков и бонус 1000⭐ — на <a href="index.html" style="color:#2563eb">главной странице</a>.
+    </p>
+    <p style="margin-top:18px;font-size:0.85rem;opacity:0.6">
+      <a href="index.html" style="color:#60a5fa">← Вернуться на сайт</a>
+    </p>
+  </div>
+</div>
+
+<div id="adminLayout" class="admin-layout" style="display:none">
+  <aside class="admin-sidebar">
+    <div class="logo" style="display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box">
+      <span style="display:flex;align-items:center;gap:8px"><span style="background:var(--accent);color:#fff;padding:3px 8px;border-radius:6px;font-size:15px">АФЛ</span> Admin</span>
+      <button type="button" class="admin-menu-toggle" id="adminMenuToggle" aria-label="Меню">☰</button>
+    </div>
+    <nav class="admin-nav" id="adminNav">
+      <button data-panel="teams" class="active">⚽ Команды</button>
+      <button data-panel="matches">📅 Матчи</button>
+      <button data-panel="players">👤 Игроки</button>
+      <button data-panel="news">📰 Новости</button>
+      <button data-panel="ads">📢 Реклама</button>
+      <button data-panel="tournaments">🏆 Турниры</button>
+      <button data-panel="totw">⭐ Команда тура</button>
+      <button data-panel="staff">👔 Персонал</button>
+      <button data-panel="settings">🎨 Оформление</button>
+      <button data-panel="suggestions">💬 Предложения</button>
+      <button data-panel="predictions">📊 Прогнозы</button>
+      <button data-panel="shop">🛒 Магазин</button>
+      <hr style="border-color:rgba(255,255,255,0.1);margin:12px 10px">
+      <button id="logoutBtn" style="color:#f87171">🚪 Выйти</button>
+      <a href="index.html" style="color:rgba(255,255,255,0.55);padding:11px 14px;text-decoration:none;font-size:0.85rem;display:block">← На сайт</a>
+    </nav>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-header"><h1 id="adminTitle">Команды</h1></div>
+
+    <!-- КОМАНДЫ -->
+    <div id="panel-teams" class="admin-panel active">
+      <div class="admin-form">
+        <h3 id="teamFormTitle">Добавить команду</h3>
+        <form id="teamForm">
+          <input type="hidden" id="teamId"><input type="hidden" id="teamLogoUrl">
+          <div class="form-row">
+            <div class="form-group"><label>Название *</label><input type="text" id="teamName" required placeholder="Динамо"></div>
+            <div class="form-group"><label>Город</label><input type="text" id="teamCity" placeholder="Москва"></div>
+          </div>
+          <div class="form-group">
+            <label>Логотип</label>
+            <div class="upload-btn-wrap">
+              <label class="upload-btn">
+                📷 Загрузить логотип
+                <input type="file" id="teamLogo" accept="image/*">
+              </label>
+              <img id="teamLogoPreview" class="upload-preview" src="" alt="" style="display:none;border-radius:8px">
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetTeamForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminTeamsTable">
+          <thead><tr><th>Лого</th><th>Название</th><th>Город</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- МАТЧИ -->
+    <div id="panel-matches" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="matchFormTitle">Добавить матч</h3>
+        <form id="matchForm">
+          <input type="hidden" id="matchId">
+          <div class="form-row">
+            <div class="form-group"><label>Хозяева *</label><select id="matchHome" class="team-select" required></select></div>
+            <div class="form-group"><label>Гости *</label><select id="matchAway" class="team-select" required></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Голы хозяев</label><input type="number" id="matchHomeScore" min="0" value="0"></div>
+            <div class="form-group"><label>Голы гостей</label><input type="number" id="matchAwayScore" min="0" value="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Дата и время</label><input type="datetime-local" id="matchDate"></div>
+            <div class="form-group"><label>Статус</label>
+              <select id="matchStatus"><option value="scheduled">Скоро</option><option value="finished">Завершён</option></select>
+            </div>
+          </div>
+          <details style="margin-bottom:14px">
+            <summary style="cursor:pointer;color:var(--text-muted);font-size:0.9rem;margin-bottom:10px">📊 Статистика матча (опционально)</summary>
+            <div class="form-row">
+              <div class="form-group"><label>Владение хозяева %</label><input type="number" id="matchHomePoss" min="0" max="100"></div>
+              <div class="form-group"><label>Владение гости %</label><input type="number" id="matchAwayPoss" min="0" max="100"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Удары хозяева</label><input type="number" id="matchHomeShots" min="0"></div>
+              <div class="form-group"><label>Удары гости</label><input type="number" id="matchAwayShots" min="0"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Угловые хозяева</label><input type="number" id="matchHomeCorners" min="0"></div>
+              <div class="form-group"><label>Угловые гости</label><input type="number" id="matchAwayCorners" min="0"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Жёлтые хоз.</label><input type="number" id="matchHomeYellow" min="0"></div>
+              <div class="form-group"><label>Жёлтые гост.</label><input type="number" id="matchAwayYellow" min="0"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Красные хоз.</label><input type="number" id="matchHomeRed" min="0"></div>
+              <div class="form-group"><label>Красные гост.</label><input type="number" id="matchAwayRed" min="0"></div>
+            </div>
+            <div class="form-group"><label>Авторы голов</label><input type="text" id="matchScorers" placeholder="Иванов 23', Петров 67'"></div>
+          </details>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetMatchForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminMatchesTable">
+          <thead><tr><th>Дата</th><th>Хозяева</th><th>Счёт</th><th>Гости</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ИГРОКИ -->
+    <div id="panel-players" class="admin-panel">
+      <input type="search" id="adminPlayerSearch" class="admin-search-input" placeholder="🔍 Поиск игрока по имени...">
+      <div class="admin-form">
+        <h3 id="playerFormTitle">Добавить игрока</h3>
+        <form id="playerForm">
+          <input type="hidden" id="playerId"><input type="hidden" id="playerPhotoUrl">
+          <div class="form-row">
+            <div class="form-group"><label>Имя *</label><input type="text" id="playerName" required placeholder="Иванов А."></div>
+            <div class="form-group"><label>Команда</label><select id="playerTeam" class="team-select"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Голы</label><input type="number" id="playerGoals" min="0" value="0"></div>
+            <div class="form-group"><label>Передачи</label><input type="number" id="playerAssists" min="0" value="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Год рождения</label><input type="number" id="playerBirthYear" min="1970" max="2015" placeholder="1998"></div>
+            <div class="form-group"><label>Номер</label><input type="number" id="playerNumber" min="1" max="99" placeholder="9"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Позиция</label>
+              <select id="playerPosition">
+                <option value="">—</option>
+                <option value="Вратарь">Вратарь</option>
+                <option value="Защитник">Защитник</option>
+                <option value="Полузащитник">Полузащитник</option>
+                <option value="Нападающий">Нападающий</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Фото игрока</label>
+              <div class="upload-btn-wrap">
+                <label class="upload-btn">
+                  📷 Загрузить фото
+                  <input type="file" id="playerPhoto" accept="image/*">
+                </label>
+                <img id="playerPhotoPreview" class="upload-preview" src="https://via.placeholder.com/48?text=?" alt="" style="display:none">
+              </div>
+            </div>
+          </div>
+          <!-- Переключатель согласия -->
+          <div class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="playerConsent">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label">Согласие на обработку персональных данных и публикацию фото</span>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetPlayerForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminPlayersTable">
+          <thead>
+            <tr><th>Фото</th><th>Имя</th><th>Команда</th><th>Голы</th><th>Пасы</th><th>Согласие</th><th>Действия</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- НОВОСТИ -->
+    <div id="panel-news" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="newsFormTitle">Добавить новость</h3>
+        <form id="newsForm">
+          <input type="hidden" id="newsId"><input type="hidden" id="newsImageUrl">
+          <div class="form-group"><label>Заголовок *</label><input type="text" id="newsTitle" required></div>
+          <div class="form-group"><label>Текст</label><textarea id="newsText"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>Дата</label><input type="date" id="newsDate"></div>
+            <div class="form-group">
+              <label>Изображение</label>
+              <div class="upload-btn-wrap">
+                <label class="upload-btn">
+                  📷 Загрузить фото
+                  <input type="file" id="newsImage" accept="image/*">
+                </label>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetNewsForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminNewsTable">
+          <thead><tr><th>Фото</th><th>Заголовок</th><th>Дата</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- РЕКЛАМА -->
+    <div id="panel-ads" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="adFormTitle">Добавить рекламу</h3>
+        <form id="adForm">
+          <input type="hidden" id="adId"><input type="hidden" id="adImageUrl">
+          <div class="form-group"><label>Ссылка</label><input type="url" id="adLink" placeholder="https://..."></div>
+          <div class="form-group">
+            <label>Изображение *</label>
+            <div class="upload-btn-wrap">
+              <label class="upload-btn">
+                📷 Загрузить баннер
+                <input type="file" id="adImage" accept="image/*">
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetAdForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminAdsTable">
+          <thead><tr><th>Баннер</th><th>Ссылка</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ТУРНИРЫ -->
+    <div id="panel-tournaments" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="tournamentFormTitle">Добавить турнир</h3>
+        <form id="tournamentForm">
+          <input type="hidden" id="tournamentId">
+          <div class="form-row">
+            <div class="form-group"><label>Название *</label><input type="text" id="tournamentName" required placeholder="АФЛ 2026"></div>
+            <div class="form-group"><label>Сезон</label><input type="text" id="tournamentSeason" placeholder="2026"></div>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="tournamentActive" style="width:auto;margin-right:8px"> Активный турнир</label>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetTournamentForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminTournamentsTable">
+          <thead><tr><th>Название</th><th>Сезон</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- КОМАНДА ТУРА -->
+    <div id="panel-totw" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="totwFormTitle">Добавить команду тура</h3>
+        <form id="totwForm">
+          <input type="hidden" id="totwId">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Название / Тур *</label>
+              <input type="text" id="totwTitle" required placeholder="Команда 1-го тура">
+            </div>
+            <div class="form-group">
+              <label>Номер тура</label>
+              <input type="number" id="totwRound" min="1" value="1">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Игроки (выберите лучших)</label>
+            <div id="totwPlayersCheckboxes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-height:280px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:10px"></div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+          <button type="button" class="btn-reset" onclick="resetTotwForm()">Сбросить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminTotwTable">
+          <thead><tr><th>Тур</th><th>Название</th><th>Игроков</th><th>Действия</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+
+    <div id="panel-staff" class="admin-panel">
+      <div class="admin-form">
+        <h3 id="staffFormTitle">Добавить персонал</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:12px">Укажите команду — тренер, врач, фотограф появятся в карточке этой команды на сайте.</p>
+        <form id="staffForm">
+          <input type="hidden" id="staffId"><input type="hidden" id="staffPhotoUrl">
+          <div class="form-row">
+            <div class="form-group"><label>Имя *</label><input type="text" id="staffName" required></div>
+            <div class="form-group"><label>Роль *</label>
+              <select id="staffRole">
+                <option value="Главный тренер">Главный тренер</option>
+                <option value="Тренер-помощник">Тренер-помощник</option>
+                <option value="Тренер">Тренер</option>
+                <option value="Фотограф">Фотограф</option>
+                <option value="Персонал">Персонал</option>
+                <option value="Врач">Врач</option>
+                <option value="Медиа">Медиа</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Команда (опционально)</label><select id="staffTeam" class="team-select"></select></div>
+          <div class="form-group">
+            <label>Фото</label>
+            <div class="upload-btn-wrap">
+              <label class="upload-btn">📷 Загрузить<input type="file" id="staffPhoto" accept="image/*"></label>
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto"><table class="admin-table" id="adminStaffTable">
+        <thead><tr><th>Фото</th><th>Имя</th><th>Роль</th><th>Действия</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <div id="panel-settings" class="admin-panel">
+      <div class="admin-form">
+        <h3>Оформление сайта</h3>
+        <form id="settingsForm">
+          <div class="form-group"><label>Заголовок на главной</label><input type="text" id="settingsTitle" placeholder="АФЛ 2026"></div>
+          <div class="form-group">
+            <label>Фон / эмблема АФЛ (повторяется на фоне)</label>
+            <div class="upload-btn-wrap">
+              <label class="upload-btn">📷 Загрузить эмблему<input type="file" id="settingsEmblem" accept="image/*"></label>
+            </div>
+            <input type="hidden" id="settingsEmblemUrl">
+            <img id="settingsEmblemPreview" style="max-width:120px;margin-top:10px;display:none;border-radius:8px">
+          </div>
+          <button type="submit" class="btn-save">Сохранить оформление</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="panel-suggestions" class="admin-panel">
+      <div style="overflow-x:auto"><table class="admin-table" id="adminSuggestionsTable">
+        <thead><tr><th>Дата</th><th>Имя</th><th>Контакт</th><th>Текст</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+    <div id="panel-predictions" class="admin-panel">
+      <div class="admin-form">
+        <h3>Прогнозы матчей</h3>
+        <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:12px">
+          Прогнозы на главной считаются автоматически по алгоритму для предстоящих матчей.
+          Отдельная настройка не требуется — достаточно добавить матчи со статусом «Скоро».
+        </p>
+      </div>
+    </div>
+
+
+    <div id="panel-shop" class="admin-panel">
+      <div class="admin-form">
+        <h3>Добавить товар в магазин</h3>
+        <form id="shopForm">
+          <input type="hidden" id="shopId">
+          <input type="hidden" id="shopImageUrl">
+          <div class="form-row">
+            <div class="form-group"><label>Название *</label><input type="text" id="shopName" required></div>
+            <div class="form-group"><label>Цена (звёзды) *</label><input type="number" id="shopPrice" min="1" value="100" required></div>
+          </div>
+          <div class="form-group"><label>Описание</label><textarea id="shopDesc"></textarea></div>
+          <div class="form-group">
+            <label>Фото</label>
+            <div class="upload-btn-wrap">
+              <label class="upload-btn">📷 Загрузить<input type="file" id="shopImage" accept="image/*"></label>
+            </div>
+          </div>
+          <button type="submit" class="btn-save">Сохранить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto"><table class="admin-table" id="adminShopTable">
+        <thead><tr><th>Фото</th><th>Название</th><th>Цена</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

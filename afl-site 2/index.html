@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
+  <title>АФЛ — Официальный сайт лиги</title>
+  <meta name="description" content="АФЛ — любительская футбольная лига. Турнирная таблица, матчи, статистика, новости.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="container">
+    <a href="#" class="logo"><span>АФЛ</span> LEAGUE</a>
+    <nav>
+      <a href="#home">Главная</a>
+      <a href="#standings">Таблица</a>
+      <a href="#matches">Матчи</a>
+      <a href="#stats">Статистика</a>
+      <a href="#predictions">Прогнозы</a>
+      <a href="#totw">Команда тура</a>
+      <a href="#teams">Команды</a>
+      <a href="#news">Новости</a>
+      <a href="#tournaments">Турниры</a>
+      <a href="#staff">Персонал</a>
+      <a href="#suggest">Предложения</a>
+      <a href="#bets">Ставки</a>
+      <a href="#shop">Магазин</a>
+      <button id="adminBtn" class="btn-admin">Админ-панель</button>
+    </nav>
+    <div class="header-right">
+      <div class="site-search-wrap">
+        <input type="search" id="siteSearch" placeholder="Поиск игрока или команды..." autocomplete="off">
+        <div id="search-results" class="search-results"></div>
+      </div>
+      <div id="userGuestBar" class="user-bar">
+        <button type="button" id="userLoginBtn" class="btn-user">Вход</button>
+        <button type="button" id="userRegisterBtn" class="btn-user btn-user-primary">Регистрация</button>
+      </div>
+      <div id="userLoggedBar" class="user-bar" style="display:none">
+        <span class="user-stars" title="Звёзды">⭐ <strong id="userStars">0</strong></span>
+        <span class="user-name" id="userName">Игрок</span>
+        <button type="button" id="userLogoutBtn" class="btn-user">Выйти</button>
+      </div>
+    </div>
+    <div class="burger" aria-label="Меню"><span></span><span></span><span></span></div>
+  </div>
+</header>
+
+<main>
+  <section id="home" class="hero">
+    <div class="container">
+      <h1 class="fade-in">АФЛ 2026</h1>
+      <p class="fade-in">Официальный сайт любительской футбольной лиги</p>
+      <div class="hero-buttons fade-in">
+        <a href="#standings" class="btn btn-primary">Таблица</a>
+        <a href="#matches" class="btn btn-outline">Матчи</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="ads">
+    <div class="container"><div id="ads-container" class="ads-grid"></div></div>
+  </section>
+
+  <section id="standings" class="section">
+    <div class="container">
+      <h2 class="section-title">Турнирная таблица</h2>
+      <div class="table-wrapper">
+        <table id="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th class="sortable" data-sort="name">Команда</th>
+              <th class="sortable" data-sort="played">И</th>
+              <th class="sortable" data-sort="win">В</th>
+              <th class="sortable" data-sort="draw">Н</th>
+              <th class="sortable" data-sort="lose">П</th>
+              <th class="sortable" data-sort="gd">Мячи</th>
+              <th class="sortable sort-desc" data-sort="points">О</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p style="text-align:center;margin-top:10px;font-size:0.8rem;color:var(--text-muted)">
+        Нажмите на заголовок столбца для сортировки
+      </p>
+    </div>
+  </section>
+
+  <section id="matches" class="section" style="background:rgba(0,0,0,0.2)">
+    <div class="container">
+      <h2 class="section-title">Матчи</h2>
+      <div id="matches-list" class="matches-grid"></div>
+    </div>
+  </section>
+
+  <section id="stats" class="section">
+    <div class="container">
+      <h2 class="section-title">Статистика</h2>
+      <div class="stats-grid">
+        <div class="stats-card fade-in">
+          <h3>⚽ Бомбардиры</h3>
+          <ul id="scorers-list" class="stats-list"></ul>
+        </div>
+        <div class="stats-card fade-in">
+          <h3>🎯 Ассистенты</h3>
+          <ul id="assists-list" class="stats-list"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="predictions" class="section" style="background:rgba(0,0,0,0.2)">
+    <div class="container">
+      <h2 class="section-title">Прогнозы матчей</h2>
+      <div id="predictions-list" class="predictions-grid"></div>
+    </div>
+  </section>
+
+  
+  <section id="totw" class="section">
+    <div class="container">
+      <h2 class="section-title">⭐ Команда тура</h2>
+      <div class="totw-header">
+        <span id="totw-round-label" class="round-label">Загрузка...</span>
+      </div>
+      <div class="pitch" id="totw-pitch">
+        <div class="pitch-center-circle"></div>
+        <div id="totw-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="teams" class="section">
+    <div class="container">
+      <h2 class="section-title">Команды</h2>
+      <div id="teams-grid" class="teams-grid"></div>
+    </div>
+  </section>
+
+  <section id="news" class="section" style="background:rgba(0,0,0,0.2)">
+    <div class="container">
+      <h2 class="section-title">Новости</h2>
+      <div id="news-list" class="news-grid"></div>
+    </div>
+  </section>
+
+
+
+  <section id="bets" class="section">
+    <div class="container">
+      <h2 class="section-title">⭐ Ставки на матчи</h2>
+      <p class="section-desc">Ставьте звёзды на исход матча. За регистрацию — 1000 ⭐. Верный прогноз умножает ставку на коэффициент.</p>
+      <div id="bets-list" class="bets-grid"></div>
+      <h3 class="sub-title">Мои ставки</h3>
+      <div id="my-bets-list" class="my-bets-list"></div>
+    </div>
+  </section>
+
+  <section id="shop" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">🛒 Магазин</h2>
+      <p class="section-desc">Тратьте звёзды на товары и бонусы лиги</p>
+      <div id="shop-list" class="shop-grid"></div>
+    </div>
+  </section>
+
+  <section id="tournaments" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Турниры</h2>
+      <div id="tournaments-list" class="tournaments-grid"></div>
+    </div>
+  </section>
+
+  <section id="staff" class="section">
+    <div class="container">
+      <h2 class="section-title">Персонал лиги</h2>
+      <div id="staff-list" class="staff-grid"></div>
+    </div>
+  </section>
+
+  <section id="suggest" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">Предложения</h2>
+      <p style="text-align:center;color:var(--text-muted);margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto">Напишите идею или предложение. Укажите Telegram или другой контакт — мы ответим.</p>
+      <form id="suggestForm" class="suggest-form">
+        <div class="form-group"><label>Имя</label><input type="text" id="suggestName" required placeholder="Как к вам обращаться"></div>
+        <div class="form-group"><label>Контакт (Telegram / WhatsApp / email)</label><input type="text" id="suggestContact" required placeholder="@username или +7..."></div>
+        <div class="form-group"><label>Предложение</label><textarea id="suggestText" required placeholder="Ваша идея..."></textarea></div>
+        <button type="submit" class="btn-save" style="width:100%">Отправить</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Документы -->
+  <section class="docs-section">
+    <div class="container">
+      <div class="docs-links">
+        <a href="privacy.html">Политика конфиденциальности</a>
+        <a href="consent.html">Согласие на обработку ПДн</a>
+        <a href="terms.html">Пользовательское соглашение</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <p>© 2026 АФЛ — Любительская футбольная лига. Все права защищены.</p>
+  </div>
+</footer>
+
+<!-- Модалка игрока -->
+<div id="playerModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" aria-label="Закрыть">&times;</button>
+    <div class="modal-body"></div>
+  </div>
+</div>
+
+<!-- Модалка матча -->
+<div id="matchModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" aria-label="Закрыть">&times;</button>
+    <div class="modal-body"></div>
+  </div>
+</div>
+
+<!-- Модалка команды -->
+<div id="teamModal" class="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" aria-label="Закрыть">&times;</button>
+    <div class="modal-body"></div>
+  </div>
+</div>
+
+
+<!-- Модалка входа / регистрации -->
+<div id="authModal" class="modal-overlay">
+  <div class="modal auth-modal">
+    <button class="modal-close" aria-label="Закрыть">&times;</button>
+    <div class="modal-body">
+      <h2 id="authTitle">Вход</h2>
+      <form id="authForm">
+        <input type="hidden" id="authMode" value="login">
+        <div class="form-group" id="authNameGroup" style="display:none">
+          <label>Имя</label>
+          <input type="text" id="authName" placeholder="Как к вам обращаться">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="authEmail" required placeholder="you@mail.ru">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="authPassword" required minlength="6" placeholder="минимум 6 символов">
+        </div>
+        <button type="submit" class="btn-save" id="authSubmitBtn" style="width:100%">Войти</button>
+        <button type="button" id="authSwitchBtn" class="btn-link">Нет аккаунта? Регистрация</button>
+        <p class="auth-hint">За регистрацию начисляется <strong>1000 ⭐</strong></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/standings.js"></script>
+<script src="js/matches.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/user-system.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
