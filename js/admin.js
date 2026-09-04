@@ -805,22 +805,38 @@ function renderAdminSuggestions() {
 }
 
 
-function setupAdminSearch() {
-  document.getElementById("adminPlayerSearch")?.addEventListener("input", e => {
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll("#adminPlayersTable tbody tr").forEach(tr => {
-      const text = tr.textContent.toLowerCase();
-      tr.style.display = !q || text.includes(q) ? "" : "none";
-    });
-  });
-  document.getElementById("adminTeamSearch")?.addEventListener("input", e => {
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll("#adminTeamsTable tbody tr").forEach(tr => {
-      const text = tr.textContent.toLowerCase();
-      tr.style.display = !q || text.includes(q) ? "" : "none";
-    });
+function filterAdminTable(tableId, query) {
+  const q = (query || "").trim().toLowerCase();
+  const tbody = document.querySelector("#" + tableId + " tbody");
+  if (!tbody) return;
+  let visible = 0;
+  tbody.querySelectorAll("tr").forEach(tr => {
+    // skip empty placeholder rows with colspan
+    const text = tr.textContent.toLowerCase();
+    const show = !q || text.includes(q);
+    tr.style.display = show ? "" : "none";
+    if (show) visible++;
   });
 }
+
+function setupAdminSearch() {
+  const binds = [
+    ["adminTeamSearch", "adminTeamsTable"],
+    ["adminPlayerSearch", "adminPlayersTable"],
+    ["adminMatchSearch", "adminMatchesTable"],
+    ["adminNewsSearch", "adminNewsTable"],
+    ["adminStaffSearch", "adminStaffTable"],
+    ["adminShopSearch", "adminShopTable"]
+  ];
+  binds.forEach(([inputId, tableId]) => {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const run = () => filterAdminTable(tableId, input.value);
+    input.addEventListener("input", run);
+    input.addEventListener("search", run); // clear button in some browsers
+  });
+}
+
 
 let adminShop = [];
 async function loadAdminShop() {
