@@ -117,30 +117,43 @@ function showAdmin() {
   document.getElementById("adminLayout").style.display = "flex";
 }
 
+async function loadPath(path) {
+  try {
+    const snap = await db.ref(path).once("value");
+    return snap.val() || {};
+  } catch (err) {
+    console.warn("loadPath failed:", path, err.message || err);
+    return {};
+  }
+}
+
 async function loadAdminData() {
   try {
-    const snaps = await Promise.all([
-      db.ref("teams").once("value"),
-      db.ref("matches").once("value"),
-      db.ref("players").once("value"),
-      db.ref("news").once("value"),
-      db.ref("ads").once("value"),
-      db.ref("tournaments").once("value"),
-      db.ref("teamOfTheRound").once("value"),
-      db.ref("staff").once("value"),
-      db.ref("suggestions").once("value"),
-      db.ref("settings").once("value")
+    const [
+      teamsVal, matchesVal, playersVal, newsVal, adsVal,
+      tournamentsVal, totwVal, staffVal, settingsVal
+    ] = await Promise.all([
+      loadPath("teams"),
+      loadPath("matches"),
+      loadPath("players"),
+      loadPath("news"),
+      loadPath("ads"),
+      loadPath("tournaments"),
+      loadPath("teamOfTheRound"),
+      loadPath("staff"),
+      loadPath("settings")
     ]);
-    cache.teams = Object.entries(snaps[0].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.matches = Object.entries(snaps[1].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.players = Object.entries(snaps[2].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.news = Object.entries(snaps[3].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.ads = Object.entries(snaps[4].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.tournaments = Object.entries(snaps[5].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.totw = Object.entries(snaps[6].val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.staff = Object.entries(snaps[7]?.val() || {}).map(([id, v]) => ({ id, ...v }));
-    cache.suggestions = Object.entries(snaps[8]?.val() || {}).map(([id, v]) => ({ id, ...v }));
-    const settingsVal = snaps[9]?.val() || {};
+
+    cache.teams = Object.entries(teamsVal).map(([id, v]) => ({ id, ...v }));
+    cache.matches = Object.entries(matchesVal).map(([id, v]) => ({ id, ...v }));
+    cache.players = Object.entries(playersVal).map(([id, v]) => ({ id, ...v }));
+    cache.news = Object.entries(newsVal).map(([id, v]) => ({ id, ...v }));
+    cache.ads = Object.entries(adsVal).map(([id, v]) => ({ id, ...v }));
+    cache.tournaments = Object.entries(tournamentsVal).map(([id, v]) => ({ id, ...v }));
+    cache.totw = Object.entries(totwVal).map(([id, v]) => ({ id, ...v }));
+    cache.staff = Object.entries(staffVal).map(([id, v]) => ({ id, ...v }));
+    cache.suggestions = [];
+
     if (document.getElementById("settingsTitle")) {
       document.getElementById("settingsTitle").value = settingsVal.siteTitle || "";
       document.getElementById("settingsEmblemUrl").value = settingsVal.emblemUrl || "";
@@ -155,16 +168,15 @@ async function loadAdminData() {
     renderAdminTotw();
     renderAdminStaff();
     renderAdminSuggestions();
-    await loadAdminShop();
-    renderAdminShop();
+    try {
+      await loadAdminShop();
+      renderAdminShop();
+    } catch (e) { console.warn("shop", e); }
     fillTeamSelects();
     fillTotwCheckboxes();
   } catch (err) {
     console.error(err);
-    const msg = (err.message || "").includes("PERMISSION_DENIED")
-      ? "Нет доступа к БД. Проверьте Rules и email админа в js/firebase-config.js"
-      : ("Ошибка загрузки: " + (err.message || ""));
-    showToast(msg, true);
+    showToast("Ошибка загрузки: " + (err.message || ""), true);
   }
 }
 
