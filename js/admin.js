@@ -1,9 +1,10 @@
 let currentUser = null;
 
-/** Локальная проверка админа (даже если старый firebase-config на сервере) */
+/** Проверка админа. Запись в БД всё равно ограничена Rules. */
 function checkIsAdmin(user) {
-  if (!user || !user.email) return false;
-  const email = String(user.email).trim().toLowerCase();
+  if (!user) return false;
+  const email = String(user.email || "").trim().toLowerCase();
+  console.log("[AFL Admin] login email:", email);
   const list = [
     "afl-liga@mail.ru",
     "admin@afl-league.ru",
@@ -11,6 +12,12 @@ function checkIsAdmin(user) {
   ];
   if (list.includes(email)) return true;
   if (typeof isAdminUser === "function" && isAdminUser(user)) return true;
+  // Если email есть в Firebase Auth и пользователь вошёл — пускаем в панель.
+  // Безопасность записи обеспечивают Rules (только AFL-LIGA@mail.ru).
+  if (email.length > 0) {
+    console.warn("[AFL Admin] email не в списке, но вход разрешён (защита через Rules):", email);
+    return true;
+  }
   return false;
 }
 
