@@ -1,4 +1,19 @@
 let currentUser = null;
+
+/** Локальная проверка админа (даже если старый firebase-config на сервере) */
+function checkIsAdmin(user) {
+  if (!user || !user.email) return false;
+  const email = String(user.email).trim().toLowerCase();
+  const list = [
+    "afl-liga@mail.ru",
+    "admin@afl-league.ru",
+    "admin@afl.ru"
+  ];
+  if (list.includes(email)) return true;
+  if (typeof isAdminUser === "function" && isAdminUser(user)) return true;
+  return false;
+}
+
 let cache = { teams: [], matches: [], players: [], news: [], ads: [], tournaments: [], totw: [], staff: [], suggestions: [] };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -23,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
   auth.onAuthStateChanged(async user => {
     currentUser = user;
     if (user) {
-      if (typeof isAdminUser === "function" && !isAdminUser(user)) {
+      if (!checkIsAdmin(user)) {
         await auth.signOut();
         showLogin();
         showToast("Доступ только для администратора", true);
@@ -42,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const password = document.getElementById("loginPassword").value;
     try {
       const cred = await auth.signInWithEmailAndPassword(email, password);
-      if (typeof isAdminUser === "function" && !isAdminUser(cred.user)) {
+      if (!checkIsAdmin(cred.user)) {
         await auth.signOut();
         showToast("Этот аккаунт не админ. Регистрация болельщиков — на главной странице.", true);
         return;

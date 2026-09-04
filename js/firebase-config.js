@@ -16,20 +16,24 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-// Email админов (только они могут зайти в admin.html и писать в БД)
+// Email админов
 const ADMIN_EMAILS = [
+  "AFL-LIGA@mail.ru",
+  "afl-liga@mail.ru",
   "admin@afl-league.ru",
   "admin@afl.ru"
 ];
 
 function isAdminUser(user) {
   if (!user || !user.email) return false;
-  return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(user.email.toLowerCase());
+  const email = String(user.email).trim().toLowerCase();
+  const allowed = ADMIN_EMAILS.map(e => e.toLowerCase());
+  if (allowed.includes(email)) return true;
+  // запасной вариант: любой @mail.ru с AFL в имени (на всякий случай)
+  if (email === "afl-liga@mail.ru") return true;
+  return false;
 }
 
-// ============================================
-// IMGBB API KEY
-// ============================================
 const IMGBB_API_KEY = "7211b469b211fbe8eddf7285042eb17d";
 
 async function uploadToImgbb(file) {
@@ -46,7 +50,7 @@ async function uploadToImgbb(file) {
     throw new Error(data.error?.message || "Upload failed");
   } catch (err) {
     console.error("ImgBB upload error:", err);
-    showToast("Ошибка загрузки изображения", true);
+    if (typeof showToast === "function") showToast("Ошибка загрузки изображения", true);
     return null;
   }
 }
