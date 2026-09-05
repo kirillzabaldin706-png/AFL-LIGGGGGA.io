@@ -18,9 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  document.getElementById("adminBtn")?.addEventListener("click", () => {
-    window.location.href = "admin.html";
-  });
+  const goAdmin = () => { window.location.href = "admin.html"; };
+  document.getElementById("adminBtn")?.addEventListener("click", goAdmin);
+  document.getElementById("adminBtnMobile")?.addEventListener("click", goAdmin);
 
   // Закрытие модалок: закрывается только верхняя (игрок поверх команды)
   document.querySelectorAll(".modal-overlay").forEach(ov => {

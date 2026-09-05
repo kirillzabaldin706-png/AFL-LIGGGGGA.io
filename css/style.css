@@ -565,3 +565,66 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 #matchModal.modal-overlay { z-index: 2050; }
 #playerModal.modal-overlay { z-index: 2100; }
 #authModal.modal-overlay { z-index: 2200; }
+
+
+/* Кнопка админа на телефоне — всегда видна в шапке */
+.btn-admin-mobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  z-index: 1002;
+  box-shadow: var(--shadow);
+}
+.btn-admin-mobile:active {
+  background: var(--accent-hover);
+  transform: scale(0.97);
+}
+
+@media (max-width: 900px) {
+  .btn-admin-mobile {
+    display: inline-flex;
+    margin-left: auto;
+    margin-right: 4px;
+  }
+  .header .container {
+    height: auto;
+    min-height: 56px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header .logo {
+    order: 1;
+  }
+  .btn-admin-mobile {
+    order: 2;
+  }
+  .burger {
+    order: 3;
+  }
+  .header-right {
+    order: 4;
+  }
+  nav {
+    order: 5;
+  }
+  nav .btn-admin {
+    width: 100%;
+    margin: 12px 0 0;
+    padding: 14px;
+    font-size: 1rem;
+    display: block;
+  }
+}
