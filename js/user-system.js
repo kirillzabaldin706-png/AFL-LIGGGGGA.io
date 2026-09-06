@@ -254,50 +254,57 @@ async function placeBet(matchId) {
 async function settleOpenBets() {
   if (!currentUser) return;
   try {
-    const [betsSnap, matchesSnap] = await Promise.all([
-      db.ref("bets").orderByChild("userId").equalTo(currentUser.uid).once("value"),
-      db.ref("matches").once("value")
+    // Без orderBy — работает без .indexOn в Rules
+    const [betsSnap, matchesSnap, profileSnap] = await Promise.all([
+      db.ref("bets").once("value"),
+      db.ref("matches").once("value"),
+      db.ref("users/" + currentUser.uid).once("value")
     ]);
     const matches = matchesSnap.val() || {};
-    const bets = betsSnap.val() || {};
+    const allBets = betsSnap.val() || {};
+    const profile = profileSnap.val() || {};
+    let currentStars = Number(profile.stars) || 0;
+    if (userProfile) userProfile.stars = currentStars;
+
     let starsDelta = 0;
-    const updates = {};
+    const settledIds = [];
 
-    Object.entries(bets).forEach(([id, bet]) => {
-      if (bet.status !== "open") return;
+    for (const [id, bet] of Object.entries(allBets)) {
+      if (!bet || bet.userId !== currentUser.uid) continue;
+      if (bet.status !== "open") continue;
       const m = matches[bet.matchId];
-      if (!m || m.status !== "finished") return;
+      if (!m || m.status !== "finished") continue;
 
-      const hs = Number(m.homeScore) || 0;
-      const as = Number(m.awayScore) || 0;
+      const hs = Number(m.homeScore ?? m.homeGoals ?? 0) || 0;
+      const as = Number(m.awayScore ?? m.awayGoals ?? 0) || 0;
       let result = "draw";
       if (hs > as) result = "home";
       else if (hs < as) result = "away";
 
-      if (bet.pick === result) {
-        const win = Math.floor(bet.amount * (bet.odds || 2));
-        updates["bets/" + id + "/status"] = "won";
-        updates["bets/" + id + "/payout"] = win;
+      const pick = String(bet.pick || "").toLowerCase();
+      if (pick === result) {
+        const win = Math.floor(Number(bet.amount || 0) * Number(bet.odds || 2));
+        await db.ref("bets/" + id).update({ status: "won", payout: win, settledAt: new Date().toISOString() });
         starsDelta += win;
       } else {
-        updates["bets/" + id + "/status"] = "lost";
-        updates["bets/" + id + "/payout"] = 0;
+        await db.ref("bets/" + id).update({ status: "lost", payout: 0, settledAt: new Date().toISOString() });
       }
-    });
+      settledIds.push(id);
+    }
 
-    if (Object.keys(updates).length) {
-      if (starsDelta > 0) {
-        const newStars = (userProfile.stars || 0) + starsDelta;
-        updates["users/" + currentUser.uid + "/stars"] = newStars;
-        userProfile.stars = newStars;
-      }
-      await db.ref().update(updates);
+    if (starsDelta > 0) {
+      const newStars = currentStars + starsDelta;
+      await db.ref("users/" + currentUser.uid).update({ stars: newStars });
+      if (userProfile) userProfile.stars = newStars;
       updateUserUI();
-      if (starsDelta > 0) showToast("Выигрыш по ставкам: +" + starsDelta + " ⭐");
+      showToast("Выигрыш по ставкам: +" + starsDelta + " ⭐");
+    } else if (settledIds.length) {
+      updateUserUI();
     }
     renderMyBets();
   } catch (e) {
     console.warn("settle bets", e);
+    if (e && e.message) console.warn(String(e.message));
   }
 }
 

@@ -106,6 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSettingsForm();
   setupShopForm();
   setupAdminSearch();
+  setupStarsForm();
+  setupAdminBetsPanel();
 });
 
 function showLogin() {
@@ -174,6 +176,8 @@ async function loadAdminData() {
     } catch (e) { console.warn("shop", e); }
     fillTeamSelects();
     fillTotwCheckboxes();
+    await loadAdminUsers();
+    await loadAdminBets();
   } catch (err) {
     console.error(err);
     showToast("Ошибка загрузки: " + (err.message || ""), true);
@@ -826,7 +830,9 @@ function setupAdminSearch() {
     ["adminMatchSearch", "adminMatchesTable"],
     ["adminNewsSearch", "adminNewsTable"],
     ["adminStaffSearch", "adminStaffTable"],
-    ["adminShopSearch", "adminShopTable"]
+    ["adminShopSearch", "adminShopTable"],
+    ["adminUserSearch", "adminUsersTable"],
+    ["adminBetsSearch", "adminBetsTable"]
   ];
   binds.forEach(([inputId, tableId]) => {
     const input = document.getElementById(inputId);
@@ -882,4 +888,202 @@ function setupShopForm() {
       renderAdminShop();
     } catch (err) { showToast(err.message, true); }
   });
+}
+
+
+// ========== ПОЛЬЗОВАТЕЛИ / ЗВЁЗДЫ ==========
+let adminUsers = [];
+let adminBetsCache = [];
+
+async function loadAdminUsers() {
+  try {
+    const snap = await db.ref("users").once("value");
+    adminUsers = Object.entries(snap.val() || {}).map(([id, v]) => ({ id, ...v }));
+    renderAdminUsers();
+  } catch (e) {
+    console.warn("users", e);
+    adminUsers = [];
+    renderAdminUsers();
+  }
+}
+
+function renderAdminUsers() {
+  const tbody = document.querySelector("#adminUsersTable tbody");
+  if (!tbody) return;
+  if (!adminUsers.length) {
+    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;opacity:.5'>Нет пользователей (или нет прав на чтение /users)</td></tr>";
+    return;
+  }
+  const sorted = [...adminUsers].sort((a, b) => (b.stars || 0) - (a.stars || 0));
+  tbody.innerHTML = sorted.map(u => `
+    <tr>
+      <td>${u.email || "—"}</td>
+      <td>${u.displayName || "—"}</td>
+      <td><strong>${u.stars ?? 0}</strong> ⭐</td>
+      <td style="font-size:.75rem;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${u.id}">${u.id}</td>
+      <td><button type="button" class="btn-save" style="padding:6px 10px;font-size:.8rem"
+        onclick="selectUserForStars('${u.id}')">Выбрать</button></td>
+    </tr>
+  `).join("");
+}
+
+window.selectUserForStars = function(uid) {
+  const u = adminUsers.find(x => x.id === uid);
+  if (!u) return;
+  document.getElementById("starsUserId").value = uid;
+  document.getElementById("starsUserEmail").value = u.email || "";
+  document.getElementById("starsCurrent").value = (u.stars ?? 0) + " ⭐";
+  document.getElementById("starsDelta").focus();
+  // switch panel if needed
+  document.querySelector('[data-panel="users"]')?.click();
+};
+
+function setupStarsForm() {
+  document.getElementById("starsAdjustForm")?.addEventListener("submit", async e => {
+    e.preventDefault();
+    const uid = document.getElementById("starsUserId").value.trim();
+    const delta = Math.floor(Number(document.getElementById("starsDelta").value));
+    const note = document.getElementById("starsNote").value.trim();
+    if (!uid) return showToast("Укажите UID", true);
+    if (!delta || isNaN(delta)) return showToast("Укажите изменение (+ или −)", true);
+    try {
+      const ref = db.ref("users/" + uid);
+      const snap = await ref.once("value");
+      if (!snap.exists()) return showToast("Пользователь не найден", true);
+      const cur = Number(snap.val().stars) || 0;
+      const next = Math.max(0, cur + delta);
+      await ref.update({
+        stars: next,
+        lastStarsAdjust: {
+          delta,
+          from: cur,
+          to: next,
+          note: note || "",
+          at: new Date().toISOString(),
+          by: (currentUser && currentUser.email) || "admin"
+        }
+      });
+      showToast((delta > 0 ? "Начислено +" : "Списано ") + delta + " ⭐ → баланс " + next);
+      document.getElementById("starsDelta").value = "";
+      document.getElementById("starsNote").value = "";
+      await loadAdminUsers();
+      const u = adminUsers.find(x => x.id === uid);
+      if (u) selectUserForStars(uid);
+    } catch (err) {
+      showToast("Ошибка: " + (err.message || err), true);
+    }
+  });
+}
+
+async function loadAdminBets() {
+  try {
+    const [betsSnap, usersSnap] = await Promise.all([
+      db.ref("bets").once("value"),
+      db.ref("users").once("value")
+    ]);
+    const users = usersSnap.val() || {};
+    adminBetsCache = Object.entries(betsSnap.val() || {}).map(([id, v]) => {
+      const u = users[v.userId] || {};
+      return { id, ...v, userEmail: u.email || v.userId, userName: u.displayName || "" };
+    }).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    renderAdminBets();
+  } catch (e) {
+    console.warn("bets", e);
+    adminBetsCache = [];
+    renderAdminBets();
+  }
+}
+
+function renderAdminBets() {
+  const tbody = document.querySelector("#adminBetsTable tbody");
+  if (!tbody) return;
+  if (!adminBetsCache.length) {
+    tbody.innerHTML = "<tr><td colspan='7' style='text-align:center;opacity:.5'>Ставок нет</td></tr>";
+    return;
+  }
+  tbody.innerHTML = adminBetsCache.map(b => {
+    const m = cache.matches.find(x => x.id === b.matchId);
+    const home = cache.teams.find(t => t.id === m?.homeId)?.name || "?";
+    const away = cache.teams.find(t => t.id === m?.awayId)?.name || "?";
+    const pickL = b.pick === "home" ? "П1" : b.pick === "away" ? "П2" : "X";
+    const st = b.status === "open" ? "⏳ open" : b.status === "won" ? "✅ won" : "❌ lost";
+    return `<tr>
+      <td>${b.userEmail || b.userId}<br><small>${b.userName || ""}</small></td>
+      <td>${home} — ${away}</td>
+      <td>${pickL}</td>
+      <td>${b.amount || 0}⭐</td>
+      <td>${b.odds || "—"}</td>
+      <td>${st}${b.payout ? " · " + b.payout + "⭐" : ""}</td>
+      <td>${b.status === "open" ? `<button type="button" class="btn-danger" style="padding:4px 8px" onclick="adminCancelBet('${b.id}')">Отмена</button>` : ""}</td>
+    </tr>`;
+  }).join("");
+}
+
+window.adminCancelBet = async function(betId) {
+  if (!confirm("Отменить ставку и вернуть сумму игроку?")) return;
+  try {
+    const snap = await db.ref("bets/" + betId).once("value");
+    const bet = snap.val();
+    if (!bet || bet.status !== "open") return showToast("Ставка уже закрыта", true);
+    const amount = Number(bet.amount) || 0;
+    const uref = db.ref("users/" + bet.userId);
+    const us = await uref.once("value");
+    const cur = Number(us.val()?.stars) || 0;
+    await uref.update({ stars: cur + amount });
+    await db.ref("bets/" + betId).update({ status: "cancelled", payout: amount, settledAt: new Date().toISOString() });
+    showToast("Ставка отменена, +" + amount + " ⭐ возвращено");
+    await loadAdminBets();
+    await loadAdminUsers();
+  } catch (e) {
+    showToast(e.message || "Ошибка", true);
+  }
+};
+
+function setupAdminBetsPanel() {
+  document.getElementById("adminSettleAllBtn")?.addEventListener("click", adminSettleAllBets);
+}
+
+async function adminSettleAllBets() {
+  showToast("Пересчёт...");
+  try {
+    const [betsSnap, matchesSnap] = await Promise.all([
+      db.ref("bets").once("value"),
+      db.ref("matches").once("value")
+    ]);
+    const matches = matchesSnap.val() || {};
+    const bets = betsSnap.val() || {};
+    let settled = 0;
+    let paid = 0;
+
+    for (const [id, bet] of Object.entries(bets)) {
+      if (!bet || bet.status !== "open") continue;
+      const m = matches[bet.matchId];
+      if (!m || m.status !== "finished") continue;
+
+      const hs = Number(m.homeScore ?? 0) || 0;
+      const as = Number(m.awayScore ?? 0) || 0;
+      let result = "draw";
+      if (hs > as) result = "home";
+      else if (hs < as) result = "away";
+
+      const pick = String(bet.pick || "").toLowerCase();
+      if (pick === result) {
+        const win = Math.floor(Number(bet.amount || 0) * Number(bet.odds || 2));
+        const uref = db.ref("users/" + bet.userId);
+        const us = await uref.once("value");
+        const cur = Number(us.val()?.stars) || 0;
+        await uref.update({ stars: cur + win });
+        await db.ref("bets/" + id).update({ status: "won", payout: win, settledAt: new Date().toISOString() });
+        paid += win;
+      } else {
+        await db.ref("bets/" + id).update({ status: "lost", payout: 0, settledAt: new Date().toISOString() });
+      }
+      settled++;
+    }
+    showToast("Закрыто ставок: " + settled + (paid ? ", выплачено " + paid + " ⭐" : ""));
+    await loadAdminBets();
+    await loadAdminUsers();
+  } catch (e) {
+    showToast("Ошибка: " + (e.message || e), true);
+  }
 }

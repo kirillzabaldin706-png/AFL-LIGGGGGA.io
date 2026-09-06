@@ -54,6 +54,8 @@
       <button data-panel="suggestions">💬 Предложения</button>
       <button data-panel="predictions">📊 Прогнозы</button>
       <button data-panel="shop">🛒 Магазин</button>
+      <button data-panel="users">⭐ Звёзды / Юзеры</button>
+      <button data-panel="adminBets">🎲 Ставки</button>
       <hr style="border-color:rgba(255,255,255,0.1);margin:12px 10px">
       <button id="logoutBtn" style="color:#f87171">🚪 Выйти</button>
       <a href="index.html" style="color:rgba(255,255,255,0.55);padding:11px 14px;text-decoration:none;font-size:0.85rem;display:block">← На сайт</a>
@@ -406,6 +408,51 @@
       </div>
     </div>
 
+
+    <div id="panel-users" class="admin-panel">
+      <input type="search" id="adminUserSearch" class="admin-search-input" placeholder="🔍 Поиск по email или имени..." autocomplete="off">
+      <div class="admin-form">
+        <h3>Изменить звёзды пользователя</h3>
+        <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:12px">
+          Выберите пользователя из таблицы или укажите UID. Можно начислить или списать звёзды (исправление ошибок).
+        </p>
+        <form id="starsAdjustForm">
+          <div class="form-row">
+            <div class="form-group"><label>UID пользователя *</label><input type="text" id="starsUserId" required placeholder="uid из таблицы"></div>
+            <div class="form-group"><label>Email (подсказка)</label><input type="text" id="starsUserEmail" readonly placeholder="—"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Текущий баланс</label><input type="text" id="starsCurrent" readonly placeholder="—"></div>
+            <div class="form-group"><label>Изменение (+ или −) *</label><input type="number" id="starsDelta" required placeholder="100 или -50"></div>
+          </div>
+          <div class="form-group"><label>Комментарий</label><input type="text" id="starsNote" placeholder="Исправление / бонус / ошибка ставки"></div>
+          <button type="submit" class="btn-save">Применить</button>
+        </form>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminUsersTable">
+          <thead><tr><th>Email</th><th>Имя</th><th>⭐</th><th>UID</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="panel-adminBets" class="admin-panel">
+      <input type="search" id="adminBetsSearch" class="admin-search-input" placeholder="🔍 Поиск ставок..." autocomplete="off">
+      <div class="admin-form">
+        <h3>Ставки пользователей</h3>
+        <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:12px">
+          Открытые ставки рассчитаются, когда матч станет «Завершён». Кнопка «Пересчитать всё» проходит по всем open-ставкам.
+        </p>
+        <button type="button" class="btn-save" id="adminSettleAllBtn">⚡ Пересчитать все открытые ставки</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table" id="adminBetsTable">
+          <thead><tr><th>Игрок</th><th>Матч</th><th>Исход</th><th>Сумма</th><th>Кф</th><th>Статус</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
 
     <div id="panel-shop" class="admin-panel">
       <div class="admin-form">
