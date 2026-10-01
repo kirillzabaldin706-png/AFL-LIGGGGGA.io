@@ -628,3 +628,64 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
     display: block;
   }
 }
+
+/* PWA install button */
+.pwa-install-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary, #1e3a5f);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+  max-width: 90vw;
+}
+.pwa-install-btn:active {
+  transform: translateX(-50%) scale(0.97);
+}
+@media (display-mode: standalone) {
+  .pwa-install-btn { display: none !important; }
+}
+
+
+/* === Турнирные таблицы: вкладки === */
+.standings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.standings-tab {
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--card, #fff);
+  color: var(--text, #1e293b);
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.standings-tab:hover {
+  border-color: var(--accent, #3b82f6);
+}
+.standings-tab.active {
+  background: var(--primary, #1e3a5f);
+  color: #fff;
+  border-color: var(--primary, #1e3a5f);
+}
+.standings-panel .table-wrapper { margin-top: 4px; }
+@media (max-width: 600px) {
+  .standings-tab { font-size: 0.8rem; padding: 7px 12px; }
+}

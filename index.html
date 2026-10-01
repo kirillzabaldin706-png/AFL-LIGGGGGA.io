@@ -6,6 +6,17 @@
   <title>АФЛ — Официальный сайт лиги</title>
   <meta name="description" content="АФЛ — любительская футбольная лига. Турнирная таблица, матчи, статистика, новости.">
   <link rel="stylesheet" href="css/style.css">
+
+  <meta name="theme-color" content="#1e3a5f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="АФЛ">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -69,27 +80,26 @@
 
   <section id="standings" class="section">
     <div class="container">
-      <h2 class="section-title">Турнирная таблица</h2>
-      <div class="table-wrapper">
-        <table id="standings-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th class="sortable" data-sort="name">Команда</th>
-              <th class="sortable" data-sort="played">И</th>
-              <th class="sortable" data-sort="win">В</th>
-              <th class="sortable" data-sort="draw">Н</th>
-              <th class="sortable" data-sort="lose">П</th>
-              <th class="sortable" data-sort="gd">Мячи</th>
-              <th class="sortable sort-desc" data-sort="points">О</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <h2 class="section-title">Турнирные таблицы</h2>
+      <div id="standings-root">
+        <div class="table-wrapper">
+          <table id="standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="sortable" data-sort="name">Команда</th>
+                <th class="sortable" data-sort="played">И</th>
+                <th class="sortable" data-sort="win">В</th>
+                <th class="sortable" data-sort="draw">Н</th>
+                <th class="sortable" data-sort="lose">П</th>
+                <th class="sortable" data-sort="gd">Мячи</th>
+                <th class="sortable sort-desc" data-sort="points">О</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
-      <p style="text-align:center;margin-top:10px;font-size:0.8rem;color:var(--text-muted)">
-        Нажмите на заголовок столбца для сортировки
-      </p>
     </div>
   </section>
 
@@ -205,6 +215,7 @@
         <a href="privacy.html">Политика конфиденциальности</a>
         <a href="consent.html">Согласие на обработку ПДн</a>
         <a href="terms.html">Пользовательское соглашение</a>
+        <a href="stars-rules.html">Правила звёзд и прогнозов</a>
       </div>
     </div>
   </section>
@@ -264,6 +275,7 @@
         <button type="submit" class="btn-save" id="authSubmitBtn" style="width:100%">Войти</button>
         <button type="button" id="authSwitchBtn" class="btn-link">Нет аккаунта? Регистрация</button>
         <p class="auth-hint">За регистрацию начисляется <strong>1000 ⭐</strong></p>
+        <p class="auth-hint" style="font-size:.75rem;margin-top:8px">Регистрируясь, вы принимаете <a href="terms.html" target="_blank">Соглашение</a>, <a href="privacy.html" target="_blank">Политику</a> и <a href="stars-rules.html" target="_blank">Правила звёзд</a></p>
       </form>
     </div>
   </div>
@@ -275,5 +287,6 @@
 <script src="js/stats.js"></script>
 <script src="js/user-system.js"></script>
 <script src="js/app.js"></script>
+<script src="js/pwa.js"></script>
 </body>
 </html>

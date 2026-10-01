@@ -101,7 +101,6 @@ async function loadAllData() {
       console.log("Firebase: команд пока нет. Добавьте их в админке.");
     }
 
-    renderStandings(calculateStandings(matches, teams));
     renderMatches(matches, teams);
     renderStats(players);
     renderTeams(teams);
@@ -119,6 +118,11 @@ async function loadAllData() {
 
     renderTeamOfTheRound(totw, players);
     renderTournaments(tournaments);
+    if (typeof renderStandingsByTournaments === "function") {
+      renderStandingsByTournaments(matches, teams, tournaments);
+    } else {
+      renderStandings(calculateStandings(matches, teams));
+    }
     renderStaff(staff);
     applySiteSettings(settings);
     if (typeof setBetContext === "function") setBetContext(matches, teams);

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>АФЛ — Админ-панель</title>
   <link rel="stylesheet" href="css/style.css">
+  <meta name="theme-color" content="#1e3a5f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -119,6 +122,13 @@
               <select id="matchStatus"><option value="scheduled">Скоро</option><option value="finished">Завершён</option></select>
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group"><label>Турнир</label>
+              <select id="matchTournament">
+                <option value="">— Без турнира —</option>
+              </select>
+            </div>
+          </div>
           <details style="margin-bottom:14px">
             <summary style="cursor:pointer;color:var(--text-muted);font-size:0.9rem;margin-bottom:10px">📊 Статистика матча (опционально)</summary>
             <div class="form-row">
@@ -149,7 +159,7 @@
       </div>
       <div style="overflow-x:auto">
         <table class="admin-table" id="adminMatchesTable">
-          <thead><tr><th>Дата</th><th>Хозяева</th><th>Счёт</th><th>Гости</th><th>Статус</th><th>Действия</th></tr></thead>
+          <thead><tr><th>Дата</th><th>Хозяева</th><th>Счёт</th><th>Гости</th><th>Турнир</th><th>Статус</th><th>Действия</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

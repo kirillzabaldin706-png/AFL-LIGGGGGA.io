@@ -191,6 +191,13 @@ function fillTeamSelects() {
       cache.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join("");
     if (cur) sel.value = cur;
   });
+  const mt = document.getElementById("matchTournament");
+  if (mt) {
+    const cur = mt.value;
+    mt.innerHTML = '<option value="">— Без турнира —</option>' +
+      cache.tournaments.map(t => `<option value="${t.id}">${t.name}${t.season ? " (" + t.season + ")" : ""}</option>`).join("");
+    if (cur) mt.value = cur;
+  }
 }
 
 // ===== КОМАНДЫ =====
@@ -282,8 +289,10 @@ function setupMatchForm() {
       awayYellow: num("matchAwayYellow"),
       homeRed: num("matchHomeRed"),
       awayRed: num("matchAwayRed"),
-      scorers: document.getElementById("matchScorers")?.value?.trim() || ""
+      scorers: document.getElementById("matchScorers")?.value?.trim() || "",
+      tournamentId: document.getElementById("matchTournament")?.value || ""
     };
+    if (!data.tournamentId) data.tournamentId = null;
     try {
       if (id) { await db.ref("matches/" + id).update(data); showToast("Обновлено"); }
       else { await db.ref("matches").push(data); showToast("Добавлено"); }
@@ -301,16 +310,18 @@ function renderAdminMatches() {
       const home = cache.teams.find(t => t.id === m.homeId)?.name || "?";
       const away = cache.teams.find(t => t.id === m.awayId)?.name || "?";
       const score = m.status === "finished" ? `${m.homeScore}:${m.awayScore}` : "—";
+      const tn = cache.tournaments.find(t => t.id === m.tournamentId)?.name || "—";
       return `<tr>
         <td>${m.date ? new Date(m.date).toLocaleString("ru-RU") : "—"}</td>
         <td>${home}</td><td>${score}</td><td>${away}</td>
+        <td>${tn}</td>
         <td>${m.status === "finished" ? "Завершён" : "Скоро"}</td>
         <td>
           <button class="btn-save" style="padding:6px 10px;font-size:0.8rem" onclick="editMatch('${m.id}')">✎</button>
           <button class="btn-danger" onclick="deleteItem('matches','${m.id}')">✕</button>
         </td>
       </tr>`;
-    }).join("") || "<tr><td colspan='6' style='text-align:center;opacity:0.5'>Нет матчей</td></tr>";
+    }).join("") || "<tr><td colspan='7' style='text-align:center;opacity:0.5'>Нет матчей</td></tr>";
 }
 
 function editMatch(id) {
@@ -323,6 +334,8 @@ function editMatch(id) {
   document.getElementById("matchAwayScore").value = m.awayScore ?? 0;
   document.getElementById("matchDate").value = m.date ? m.date.slice(0, 16) : "";
   document.getElementById("matchStatus").value = m.status || "scheduled";
+  const mt = document.getElementById("matchTournament");
+  if (mt) mt.value = m.tournamentId || "";
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
   set("matchHomePoss", m.homePossession);
   set("matchAwayPoss", m.awayPossession);
