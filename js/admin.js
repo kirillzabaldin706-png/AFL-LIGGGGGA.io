@@ -543,6 +543,29 @@ function resetAdForm() {
 }
 
 // ===== ТУРНИРЫ =====
+function getSelectedTournamentTeamIds() {
+  return Array.from(document.querySelectorAll("#tournamentTeamsBox input[type=checkbox]:checked"))
+    .map(cb => cb.value)
+    .filter(Boolean);
+}
+
+function fillTournamentTeamsBox(selectedIds) {
+  const box = document.getElementById("tournamentTeamsBox");
+  if (!box) return;
+  const selected = new Set(selectedIds || []);
+  if (!cache.teams.length) {
+    box.innerHTML = '<span style="opacity:0.6;font-size:0.9rem">Сначала добавьте команды в разделе «Команды»</span>';
+    return;
+  }
+  box.innerHTML = cache.teams.map(t => {
+    const checked = selected.has(t.id) ? " checked" : "";
+    return `<label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer;padding:4px 2px">
+      <input type="checkbox" value="${t.id}"${checked} style="width:auto;margin:0">
+      <span>${t.name}</span>
+    </label>`;
+  }).join("");
+}
+
 function setupTournamentForm() {
   document.getElementById("tournamentForm")?.addEventListener("submit", async e => {
     e.preventDefault();
@@ -550,8 +573,9 @@ function setupTournamentForm() {
     const name = document.getElementById("tournamentName").value.trim();
     const season = document.getElementById("tournamentSeason").value.trim();
     const active = document.getElementById("tournamentActive").checked;
+    const teamIds = getSelectedTournamentTeamIds();
     if (!name) return showToast("Введите название", true);
-    const data = { name, season, active };
+    const data = { name, season, active, teamIds };
     try {
       if (id) { await db.ref("tournaments/" + id).update(data); showToast("Обновлено"); }
       else { await db.ref("tournaments").push(data); showToast("Добавлено"); }
@@ -563,15 +587,26 @@ function setupTournamentForm() {
 function renderAdminTournaments() {
   const tbody = document.querySelector("#adminTournamentsTable tbody");
   if (!tbody) return;
-  tbody.innerHTML = cache.tournaments.map(t => `<tr>
+  tbody.innerHTML = cache.tournaments.map(t => {
+    const n = Array.isArray(t.teamIds) ? t.teamIds.length : 0;
+    const names = (Array.isArray(t.teamIds) ? t.teamIds : [])
+      .map(id => cache.teams.find(x => x.id === id)?.name)
+      .filter(Boolean)
+      .slice(0, 4)
+      .join(", ");
+    const more = n > 4 ? ` +${n - 4}` : "";
+    return `<tr>
     <td>${t.name}</td>
     <td>${t.season || "—"}</td>
+    <td title="${names}${more}">${n}${names ? " · " + names + more : ""}</td>
     <td>${t.active ? "✅ Активен" : "—"}</td>
     <td>
       <button class="btn-save" style="padding:6px 10px;font-size:0.8rem" onclick="editTournament('${t.id}')">✎</button>
       <button class="btn-danger" onclick="deleteItem('tournaments','${t.id}')">✕</button>
     </td>
-  </tr>`).join("") || "<tr><td colspan='4' style='text-align:center;opacity:0.5'>Нет турниров</td></tr>";
+  </tr>`;
+  }).join("") || "<tr><td colspan='5' style='text-align:center;opacity:0.5'>Нет турниров</td></tr>";
+  fillTournamentTeamsBox([]);
 }
 
 function editTournament(id) {
@@ -581,6 +616,7 @@ function editTournament(id) {
   document.getElementById("tournamentName").value = t.name;
   document.getElementById("tournamentSeason").value = t.season || "";
   document.getElementById("tournamentActive").checked = !!t.active;
+  fillTournamentTeamsBox(Array.isArray(t.teamIds) ? t.teamIds : []);
   document.getElementById("tournamentFormTitle").textContent = "Редактировать турнир";
 }
 
@@ -588,6 +624,7 @@ function resetTournamentForm() {
   document.getElementById("tournamentForm").reset();
   document.getElementById("tournamentId").value = "";
   document.getElementById("tournamentFormTitle").textContent = "Добавить турнир";
+  fillTournamentTeamsBox([]);
 }
 
 async function deleteItem(path, id) {

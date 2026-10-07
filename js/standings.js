@@ -3,9 +3,17 @@
  * Матчи без tournamentId попадают в блок «Без турнира».
  */
 
-function calculateStandings(matches, teams, tournamentId) {
+function calculateStandings(matches, teams, tournamentId, enrolledTeamIds) {
   const table = {};
-  teams.forEach(t => {
+  const enroll = Array.isArray(enrolledTeamIds) && enrolledTeamIds.length
+    ? new Set(enrolledTeamIds)
+    : null;
+
+  const baseTeams = enroll
+    ? teams.filter(t => enroll.has(t.id))
+    : teams;
+
+  baseTeams.forEach(t => {
     table[t.id] = {
       id: t.id, name: t.name, logo: t.logo || "",
       played: 0, win: 0, draw: 0, lose: 0, gf: 0, ga: 0, points: 0, form: []
@@ -22,6 +30,18 @@ function calculateStandings(matches, teams, tournamentId) {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   sortedMatches.forEach(m => {
+    // если команда сыграла, но не в списке участников — всё равно добавим в таблицу
+    [m.homeId, m.awayId].forEach(tid => {
+      if (!table[tid]) {
+        const tm = teams.find(x => x.id === tid);
+        if (tm) {
+          table[tid] = {
+            id: tm.id, name: tm.name, logo: tm.logo || "",
+            played: 0, win: 0, draw: 0, lose: 0, gf: 0, ga: 0, points: 0, form: []
+          };
+        }
+      }
+    });
     const home = table[m.homeId];
     const away = table[m.awayId];
     if (!home || !away) return;
@@ -44,16 +64,19 @@ function calculateStandings(matches, teams, tournamentId) {
 
   Object.values(table).forEach(t => { t.form = t.form.slice(-5); });
 
-  // Только команды, которые играли в этом турнире
-  return Object.values(table)
-    .filter(t => t.played > 0)
-    .sort((a, b) => {
-      if (b.points !== a.points) return b.points - a.points;
-      const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
-      if (gdB !== gdA) return gdB - gdA;
-      if (b.gf !== a.gf) return b.gf - a.gf;
-      return a.name.localeCompare(b.name);
-    });
+  let rows = Object.values(table);
+  // Если задан список участников — показываем всех (даже 0 игр). Иначе только сыгравшие.
+  if (!enroll) {
+    rows = rows.filter(t => t.played > 0);
+  }
+
+  return rows.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    const gdA = a.gf - a.ga, gdB = b.gf - b.ga;
+    if (gdB !== gdA) return gdB - gdA;
+    if (b.gf !== a.gf) return b.gf - a.gf;
+    return a.name.localeCompare(b.name);
+  });
 }
 
 let standingsByTournament = {}; // id -> rows
@@ -145,12 +168,18 @@ function renderStandingsByTournaments(matches, teams, tournaments) {
     tabs.push({ id: "__all__", title: "Общая таблица" });
   }
 
+  const tournamentMap = {};
+  list.forEach(t => { tournamentMap[t.id] = t; });
+
   standingsByTournament = {};
   tabs.forEach(tab => {
     if (tab.id === "__all__") {
-      standingsByTournament[tab.id] = calculateStandings(matches, teams, null);
+      standingsByTournament[tab.id] = calculateStandings(matches, teams, null, null);
+    } else if (tab.id === "__none__") {
+      standingsByTournament[tab.id] = calculateStandings(matches, teams, "__none__", null);
     } else {
-      standingsByTournament[tab.id] = calculateStandings(matches, teams, tab.id);
+      const enrolled = tournamentMap[tab.id]?.teamIds || null;
+      standingsByTournament[tab.id] = calculateStandings(matches, teams, tab.id, enrolled);
     }
   });
 

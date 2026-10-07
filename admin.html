@@ -301,13 +301,18 @@
           <div class="form-group">
             <label><input type="checkbox" id="tournamentActive" style="width:auto;margin-right:8px"> Активный турнир</label>
           </div>
+          <div class="form-group">
+            <label>Команды-участники турнира</label>
+            <p style="font-size:0.85rem;opacity:0.7;margin:4px 0 10px">Отметьте команды, которые играют именно в этом турнире</p>
+            <div id="tournamentTeamsBox" class="tournament-teams-box" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;max-height:220px;overflow-y:auto;padding:12px;border:1px solid var(--border,#e2e8f0);border-radius:10px;background:var(--card,#f8fafc)"></div>
+          </div>
           <button type="submit" class="btn-save">Сохранить</button>
           <button type="button" class="btn-reset" onclick="resetTournamentForm()">Сбросить</button>
         </form>
       </div>
       <div style="overflow-x:auto">
         <table class="admin-table" id="adminTournamentsTable">
-          <thead><tr><th>Название</th><th>Сезон</th><th>Статус</th><th>Действия</th></tr></thead>
+          <thead><tr><th>Название</th><th>Сезон</th><th>Команд</th><th>Статус</th><th>Действия</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
