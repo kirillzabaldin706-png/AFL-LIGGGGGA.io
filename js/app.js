@@ -113,7 +113,12 @@ async function loadAllData() {
     let tournaments = [];
     try {
       const ts = await db.ref("tournaments").once("value");
-      tournaments = Object.entries(ts.val() || {}).map(([id, x]) => ({ id, ...x }));
+      tournaments = Object.entries(ts.val() || {}).map(([id, x]) => {
+        const t = { id, ...x };
+        if (t.teamIds && !Array.isArray(t.teamIds)) t.teamIds = Object.values(t.teamIds).filter(Boolean);
+        if (!Array.isArray(t.teamIds)) t.teamIds = [];
+        return t;
+      });
     } catch(e) {}
 
     renderTeamOfTheRound(totw, players);

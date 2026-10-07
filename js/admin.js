@@ -151,7 +151,12 @@ async function loadAdminData() {
     cache.players = Object.entries(playersVal).map(([id, v]) => ({ id, ...v }));
     cache.news = Object.entries(newsVal).map(([id, v]) => ({ id, ...v }));
     cache.ads = Object.entries(adsVal).map(([id, v]) => ({ id, ...v }));
-    cache.tournaments = Object.entries(tournamentsVal).map(([id, v]) => ({ id, ...v }));
+    cache.tournaments = Object.entries(tournamentsVal).map(([id, v]) => {
+      const t = { id, ...v };
+      if (t.teamIds && !Array.isArray(t.teamIds)) t.teamIds = Object.values(t.teamIds).filter(Boolean);
+      if (!Array.isArray(t.teamIds)) t.teamIds = [];
+      return t;
+    });
     cache.totw = Object.entries(totwVal).map(([id, v]) => ({ id, ...v }));
     cache.staff = Object.entries(staffVal).map(([id, v]) => ({ id, ...v }));
     cache.suggestions = [];
@@ -552,18 +557,30 @@ function getSelectedTournamentTeamIds() {
 function fillTournamentTeamsBox(selectedIds) {
   const box = document.getElementById("tournamentTeamsBox");
   if (!box) return;
-  const selected = new Set(selectedIds || []);
+  let ids = selectedIds || [];
+  if (!Array.isArray(ids)) ids = Object.values(ids || {}).filter(Boolean);
+  const selected = new Set(ids);
   if (!cache.teams.length) {
     box.innerHTML = '<span style="opacity:0.6;font-size:0.9rem">Сначала добавьте команды в разделе «Команды»</span>';
     return;
   }
-  box.innerHTML = cache.teams.map(t => {
-    const checked = selected.has(t.id) ? " checked" : "";
-    return `<label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer;padding:4px 2px">
-      <input type="checkbox" value="${t.id}"${checked} style="width:auto;margin:0">
-      <span>${t.name}</span>
-    </label>`;
-  }).join("");
+  box.innerHTML =
+    `<div style="grid-column:1/-1;display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+      <button type="button" class="btn-reset" style="padding:4px 10px;font-size:0.8rem" onclick="tournamentSelectAllTeams(true)">Выбрать все</button>
+      <button type="button" class="btn-reset" style="padding:4px 10px;font-size:0.8rem" onclick="tournamentSelectAllTeams(false)">Снять все</button>
+      <span style="font-size:0.8rem;opacity:0.7;align-self:center">Отметьте команды — они сразу появятся в таблице турнира</span>
+    </div>` +
+    cache.teams.map(t => {
+      const checked = selected.has(t.id) ? " checked" : "";
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer;padding:4px 2px">
+        <input type="checkbox" value="${t.id}"${checked} style="width:auto;margin:0">
+        <span>${t.name}</span>
+      </label>`;
+    }).join("");
+}
+
+function tournamentSelectAllTeams(on) {
+  document.querySelectorAll("#tournamentTeamsBox input[type=checkbox]").forEach(cb => { cb.checked = !!on; });
 }
 
 function setupTournamentForm() {

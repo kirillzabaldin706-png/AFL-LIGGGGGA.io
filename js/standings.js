@@ -3,11 +3,18 @@
  * Матчи без tournamentId попадают в блок «Без турнира».
  */
 
+/** Firebase иногда отдаёт массив как объект {0: id, 1: id} */
+function normalizeIdList(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (typeof val === "object") return Object.values(val).filter(Boolean);
+  return [];
+}
+
 function calculateStandings(matches, teams, tournamentId, enrolledTeamIds) {
   const table = {};
-  const enroll = Array.isArray(enrolledTeamIds) && enrolledTeamIds.length
-    ? new Set(enrolledTeamIds)
-    : null;
+  const enrolled = normalizeIdList(enrolledTeamIds);
+  const enroll = enrolled.length ? new Set(enrolled) : null;
 
   const baseTeams = enroll
     ? teams.filter(t => enroll.has(t.id))
@@ -178,7 +185,7 @@ function renderStandingsByTournaments(matches, teams, tournaments) {
     } else if (tab.id === "__none__") {
       standingsByTournament[tab.id] = calculateStandings(matches, teams, "__none__", null);
     } else {
-      const enrolled = tournamentMap[tab.id]?.teamIds || null;
+      const enrolled = normalizeIdList(tournamentMap[tab.id]?.teamIds);
       standingsByTournament[tab.id] = calculateStandings(matches, teams, tab.id, enrolled);
     }
   });
