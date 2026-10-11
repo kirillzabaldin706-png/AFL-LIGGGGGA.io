@@ -295,7 +295,8 @@ function setupMatchForm() {
       homeRed: num("matchHomeRed"),
       awayRed: num("matchAwayRed"),
       scorers: document.getElementById("matchScorers")?.value?.trim() || "",
-      tournamentId: document.getElementById("matchTournament")?.value || ""
+      tournamentId: document.getElementById("matchTournament")?.value || "",
+      stage: document.getElementById("matchStage")?.value || "regular"
     };
     if (!data.tournamentId) data.tournamentId = null;
     try {
@@ -316,10 +317,12 @@ function renderAdminMatches() {
       const away = cache.teams.find(t => t.id === m.awayId)?.name || "?";
       const score = m.status === "finished" ? `${m.homeScore}:${m.awayScore}` : "—";
       const tn = cache.tournaments.find(t => t.id === m.tournamentId)?.name || "—";
+      const stMap = {regular:"Группа",r16:"1/8",qf:"1/4",sf:"1/2",final:"Финал",third:"3-е",group:"Группа"};
+      const st = stMap[m.stage] || m.stage || "—";
       return `<tr>
         <td>${m.date ? new Date(m.date).toLocaleString("ru-RU") : "—"}</td>
         <td>${home}</td><td>${score}</td><td>${away}</td>
-        <td>${tn}</td>
+        <td>${tn}<br><small style="opacity:0.7">${st}</small></td>
         <td>${m.status === "finished" ? "Завершён" : "Скоро"}</td>
         <td>
           <button class="btn-save" style="padding:6px 10px;font-size:0.8rem" onclick="editMatch('${m.id}')">✎</button>
@@ -341,6 +344,8 @@ function editMatch(id) {
   document.getElementById("matchStatus").value = m.status || "scheduled";
   const mt = document.getElementById("matchTournament");
   if (mt) mt.value = m.tournamentId || "";
+  const ms = document.getElementById("matchStage");
+  if (ms) ms.value = m.stage || "regular";
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
   set("matchHomePoss", m.homePossession);
   set("matchAwayPoss", m.awayPossession);
@@ -592,8 +597,14 @@ function setupTournamentForm() {
     const active = document.getElementById("tournamentActive").checked;
     const teamIds = getSelectedTournamentTeamIds();
     if (!name) return showToast("Введите название", true);
-    const data = { name, season, active, teamIds };
+    let logo = document.getElementById("tournamentLogoUrl")?.value?.trim() || "";
+    const file = document.getElementById("tournamentLogo")?.files?.[0];
     try {
+      if (file) {
+        showToast("Загрузка эмблемы...");
+        logo = await uploadToImgbb(file) || logo;
+      }
+      const data = { name, season, active, teamIds, logo: logo || "" };
       if (id) { await db.ref("tournaments/" + id).update(data); showToast("Обновлено"); }
       else { await db.ref("tournaments").push(data); showToast("Добавлено"); }
       resetTournamentForm(); await loadAdminData();
@@ -612,8 +623,9 @@ function renderAdminTournaments() {
       .slice(0, 4)
       .join(", ");
     const more = n > 4 ? ` +${n - 4}` : "";
+    const logo = t.logo ? `<img src="${t.logo}" alt="" style="width:28px;height:28px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">` : "";
     return `<tr>
-    <td>${t.name}</td>
+    <td>${logo}${t.name}</td>
     <td>${t.season || "—"}</td>
     <td title="${names}${more}">${n}${names ? " · " + names + more : ""}</td>
     <td>${t.active ? "✅ Активен" : "—"}</td>
@@ -633,6 +645,10 @@ function editTournament(id) {
   document.getElementById("tournamentName").value = t.name;
   document.getElementById("tournamentSeason").value = t.season || "";
   document.getElementById("tournamentActive").checked = !!t.active;
+  const tlu = document.getElementById("tournamentLogoUrl");
+  if (tlu) tlu.value = t.logo || "";
+  const tlf = document.getElementById("tournamentLogo");
+  if (tlf) tlf.value = "";
   fillTournamentTeamsBox(Array.isArray(t.teamIds) ? t.teamIds : []);
   document.getElementById("tournamentFormTitle").textContent = "Редактировать турнир";
 }
@@ -641,6 +657,8 @@ function resetTournamentForm() {
   document.getElementById("tournamentForm").reset();
   document.getElementById("tournamentId").value = "";
   document.getElementById("tournamentFormTitle").textContent = "Добавить турнир";
+  const tlu = document.getElementById("tournamentLogoUrl");
+  if (tlu) tlu.value = "";
   fillTournamentTeamsBox([]);
 }
 

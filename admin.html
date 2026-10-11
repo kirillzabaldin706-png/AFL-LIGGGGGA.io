@@ -128,6 +128,16 @@
                 <option value="">— Без турнира —</option>
               </select>
             </div>
+            <div class="form-group"><label>Стадия</label>
+              <select id="matchStage">
+                <option value="regular">Группа / обычный</option>
+                <option value="r16">1/8 финала</option>
+                <option value="qf">1/4 финала</option>
+                <option value="sf">1/2 финала</option>
+                <option value="third">Матч за 3-е место</option>
+                <option value="final">Финал</option>
+              </select>
+            </div>
           </div>
           <details style="margin-bottom:14px">
             <summary style="cursor:pointer;color:var(--text-muted);font-size:0.9rem;margin-bottom:10px">📊 Статистика матча (опционально)</summary>
@@ -300,6 +310,10 @@
           </div>
           <div class="form-group">
             <label><input type="checkbox" id="tournamentActive" style="width:auto;margin-right:8px"> Активный турнир</label>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Эмблема турнира (файл)</label><input type="file" id="tournamentLogo" accept="image/*"></div>
+            <div class="form-group"><label>или URL эмблемы</label><input type="url" id="tournamentLogoUrl" placeholder="https://..."></div>
           </div>
           <div class="form-group">
             <label>Команды-участники турнира</label>

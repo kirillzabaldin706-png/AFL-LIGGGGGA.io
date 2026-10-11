@@ -102,6 +102,7 @@ async function loadAllData() {
     }
 
     renderMatches(matches, teams);
+    if (typeof renderPlayoffs === "function") renderPlayoffs(matches, teams);
     renderStats(players);
     renderTeams(teams);
     renderNews(news);
@@ -480,6 +481,7 @@ function renderTournaments(list) {
   }
   el.innerHTML = list.map(t => `
     <div class="tournament-card fade-in">
+      ${t.logo ? `<img class="tournament-logo" src="${t.logo}" alt="" onerror="this.style.display='none'">` : ""}
       <h3>${t.name}</h3>
       <div class="season">${t.season || ""}</div>
       ${t.active ? '<span class="badge-active">Активен</span>' : ""}
