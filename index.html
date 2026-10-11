@@ -221,9 +221,13 @@
     <div class="container">
       <div class="docs-links">
         <a href="privacy.html">Политика конфиденциальности</a>
-        <a href="consent.html">Согласие на обработку ПДн</a>
         <a href="terms.html">Пользовательское соглашение</a>
-        <a href="stars-rules.html">Правила звёзд и прогнозов</a>
+        <a href="consent.html">Согласия на ПДн и фото</a>
+        <a href="media-policy.html">Медиа-политика</a>
+        <a href="disclaimer.html">Отказ от ответственности</a>
+        <a href="cookies.html">Cookie</a>
+        <a href="stars-rules.html">Правила звёзд</a>
+        <a href="rules-league.html">Регламент Лиги</a>
       </div>
     </div>
   </section>
@@ -297,5 +301,26 @@
 <script src="js/user-system.js"></script>
 <script src="js/app.js"></script>
 <script src="js/pwa.js"></script>
+
+<div id="cookie-banner" class="cookie-banner" style="display:none">
+  <p>Мы используем необходимые cookie и локальное хранилище для входа и работы сайта. Продолжая пользоваться сайтом, вы соглашаетесь с
+  <a href="cookies.html">политикой cookie</a> и <a href="privacy.html">политикой конфиденциальности</a>.</p>
+  <button type="button" id="cookie-accept" class="btn btn-primary" style="margin-top:8px">Понятно</button>
+</div>
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("afl_cookie_ok")) return;
+    var b = document.getElementById("cookie-banner");
+    if (!b) return;
+    b.style.display = "block";
+    document.getElementById("cookie-accept").onclick = function(){
+      localStorage.setItem("afl_cookie_ok", "1");
+      b.style.display = "none";
+    };
+  } catch(e) {}
+})();
+</script>
+
 </body>
 </html>
