@@ -886,3 +886,164 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 /* === Стрим === */
 .stream-frame { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
 .stream-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* === Компактные карточки ставок === */
+.bet-card-compact {
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.bet-card-compact:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.12);
+}
+.bet-compact-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+.bet-open-hint { color: var(--accent, #0ea5e9); font-weight: 700; }
+.bet-compact-teams {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.bet-compact-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.bet-compact-team img {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #fff;
+}
+.bet-compact-vs { font-weight: 800; opacity: 0.5; }
+.bet-odds-preview { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.bet-chip {
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* === Полный купон (букмекер) === */
+.bet-slip-overlay .bet-slip-modal {
+  max-width: 520px;
+  width: 96%;
+  max-height: 92vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  border-radius: 18px;
+  padding: 0;
+  position: relative;
+}
+.bet-slip-themes {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.bet-theme-btn {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  cursor: pointer; padding: 0;
+}
+.bet-theme-btn.active { border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.4); }
+.bet-slip-head {
+  text-align: center;
+  padding: 12px 16px 8px;
+}
+.bet-slip-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.bet-slip-teams div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+.bet-slip-teams img {
+  width: 52px; height: 52px; border-radius: 50%; object-fit: cover; background: #fff;
+}
+.bet-slip-date { opacity: 0.75; font-size: 0.85rem; margin-top: 8px; }
+.bet-slip-note { opacity: 0.55; font-size: 0.75rem; margin: 4px 0 0; }
+.bet-slip-body {
+  overflow-y: auto;
+  padding: 8px 14px 12px;
+  flex: 1;
+}
+.bm-block { margin-bottom: 14px; }
+.bm-block h4 {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  font-weight: 700;
+}
+.bm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.bm-grid-4 { grid-template-columns: repeat(2, 1fr); }
+.bm-grid-scores { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 480px) {
+  .bm-grid-scores { grid-template-columns: repeat(3, 1fr); }
+}
+.bm-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background .15s, border-color .15s;
+}
+.bm-pick:hover { background: rgba(255,255,255,0.18); }
+.bm-pick.active {
+  background: rgba(251,191,36,0.25);
+  border-color: #fbbf24;
+}
+.bm-odd { font-weight: 800; font-size: 0.95rem; color: #fbbf24; }
+.bet-slip-footer {
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding: 12px 16px 16px;
+  background: rgba(0,0,0,0.25);
+}
+.bet-slip-selected { font-size: 0.9rem; margin-bottom: 8px; min-height: 1.2em; }
+.bet-slip-row { display: flex; gap: 10px; }
+.bet-slip-row input {
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  padding: 10px 12px;
+}
+.bet-slip-potential { margin-top: 8px; font-size: 0.85rem; color: #86efac; text-align: center; }
+.bet-slip-modal .modal-close {
+  color: #fff;
+  background: rgba(0,0,0,0.25);
+}
