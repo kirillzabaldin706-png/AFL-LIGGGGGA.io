@@ -1,24 +1,17 @@
 let currentUser = null;
 
-/** Проверка админа. Запись в БД всё равно ограничена Rules. */
+/** Строгая проверка: в админку только email из списка. */
 function checkIsAdmin(user) {
-  if (!user) return false;
-  const email = String(user.email || "").trim().toLowerCase();
-  console.log("[AFL Admin] login email:", email);
-  const list = [
-    "afl-liga@mail.ru",
-    "admin@afl-league.ru",
-    "admin@afl.ru"
-  ];
-  if (list.includes(email)) return true;
-  if (typeof isAdminUser === "function" && isAdminUser(user)) return true;
-  // Если email есть в Firebase Auth и пользователь вошёл — пускаем в панель.
-  // Безопасность записи обеспечивают Rules (только AFL-LIGA@mail.ru).
-  if (email.length > 0) {
-    console.warn("[AFL Admin] email не в списке, но вход разрешён (защита через Rules):", email);
-    return true;
+  if (!user || !user.email) return false;
+  const email = String(user.email).trim().toLowerCase();
+  // Единственный источник правды — isAdminUser из firebase-config.js
+  if (typeof isAdminUser === "function") {
+    const ok = isAdminUser(user);
+    if (!ok) console.warn("[AFL Admin] отказ: не админ:", email);
+    return ok;
   }
-  return false;
+  const list = ["afl-liga@mail.ru", "admin@afl-league.ru", "admin@afl.ru"];
+  return list.includes(email);
 }
 
 let cache = { teams: [], matches: [], players: [], news: [], ads: [], tournaments: [], totw: [], staff: [], suggestions: [] };
@@ -296,7 +289,8 @@ function setupMatchForm() {
       awayRed: num("matchAwayRed"),
       scorers: document.getElementById("matchScorers")?.value?.trim() || "",
       tournamentId: document.getElementById("matchTournament")?.value || "",
-      stage: document.getElementById("matchStage")?.value || "regular"
+      stage: document.getElementById("matchStage")?.value || "regular",
+      streamUrl: document.getElementById("matchStreamUrl")?.value?.trim() || ""
     };
     if (!data.tournamentId) data.tournamentId = null;
     try {
@@ -346,6 +340,8 @@ function editMatch(id) {
   if (mt) mt.value = m.tournamentId || "";
   const ms = document.getElementById("matchStage");
   if (ms) ms.value = m.stage || "regular";
+  const msu = document.getElementById("matchStreamUrl");
+  if (msu) msu.value = m.streamUrl || "";
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
   set("matchHomePoss", m.homePossession);
   set("matchAwayPoss", m.awayPossession);

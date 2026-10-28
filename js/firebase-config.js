@@ -16,22 +16,16 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 
-// Email админов
+// ТОЛЬКО эти email могут открыть admin.html и писать в БД (плюс Rules)
 const ADMIN_EMAILS = [
   "AFL-LIGA@mail.ru",
-  "afl-liga@mail.ru",
-  "admin@afl-league.ru",
-  "admin@afl.ru"
+  "afl-liga@mail.ru"
 ];
 
 function isAdminUser(user) {
   if (!user || !user.email) return false;
   const email = String(user.email).trim().toLowerCase();
-  const allowed = ADMIN_EMAILS.map(e => e.toLowerCase());
-  if (allowed.includes(email)) return true;
-  // запасной вариант: любой @mail.ru с AFL в имени (на всякий случай)
-  if (email === "afl-liga@mail.ru") return true;
-  return false;
+  return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email);
 }
 
 const IMGBB_API_KEY = "7211b469b211fbe8eddf7285042eb17d";

@@ -102,6 +102,7 @@ async function loadAllData() {
     }
 
     renderMatches(matches, teams);
+    if (typeof renderUpcomingHero === "function") renderUpcomingHero(matches, teams);
     if (typeof renderPlayoffs === "function") renderPlayoffs(matches, teams);
     renderStats(players);
     renderTeams(teams);

@@ -1,3 +1,7 @@
+const MATCHES_VISIBLE = 6;
+let matchesExpanded = false;
+let matchesCache = { list: [], teams: [] };
+
 function teamLogoUrl(team) {
   return team?.logo || "https://via.placeholder.com/64?text=FC";
 }
@@ -14,59 +18,85 @@ function stageBadge(stage) {
 function renderMatches(matches, teams) {
   const container = document.getElementById("matches-list");
   if (!container) return;
-  container.innerHTML = "";
 
-  // Обычные матчи (не плей-офф) — или все, если плей-офф отдельно
   const regular = matches.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
-  const list = regular.length ? regular : matches;
-  const sorted = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const list = (regular.length ? regular : matches)
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  if (!sorted.length) {
+  matchesCache = { list, teams };
+
+  if (!list.length) {
     container.innerHTML = "<p style='text-align:center;opacity:0.5;grid-column:1/-1'>Матчей пока нет</p>";
+    const more = document.getElementById("matches-show-more");
+    if (more) more.style.display = "none";
     return;
   }
 
-  sorted.forEach(m => {
-    const home = teams.find(t => t.id === m.homeId);
-    const away = teams.find(t => t.id === m.awayId);
-    const homeName = home?.name || "—";
-    const awayName = away?.name || "—";
-    const isFinished = m.status === "finished";
-    const score = isFinished ? `${m.homeScore ?? 0} : ${m.awayScore ?? 0}` : "vs";
-    const dateStr = m.date
-      ? new Date(m.date).toLocaleDateString("ru-RU", {
-          day: "numeric", month: "long", year: "numeric",
-          hour: "2-digit", minute: "2-digit"
-        })
-      : "";
+  const visible = matchesExpanded ? list : list.slice(0, MATCHES_VISIBLE);
+  container.innerHTML = "";
+  visible.forEach(m => container.appendChild(buildMatchCard(m, teams)));
 
-    const card = document.createElement("div");
-    card.className = "match-card fade-in";
-    card.dataset.matchId = m.id;
-    card.innerHTML = `
-      <div class="match-date">${dateStr} ${stageBadge(m.stage)}</div>
-      <div class="match-teams match-teams-logos">
-        <div class="match-team-block">
-          <img class="match-team-logo" src="${teamLogoUrl(home)}" alt=""
-               onerror="this.src='https://via.placeholder.com/48?text=FC'">
-          <div class="match-team">${homeName}</div>
-        </div>
-        <div class="match-score">${score}</div>
-        <div class="match-team-block">
-          <img class="match-team-logo" src="${teamLogoUrl(away)}" alt=""
-               onerror="this.src='https://via.placeholder.com/48?text=FC'">
-          <div class="match-team">${awayName}</div>
-        </div>
+  let moreWrap = document.getElementById("matches-show-more");
+  if (!moreWrap) {
+    moreWrap = document.createElement("div");
+    moreWrap.id = "matches-show-more";
+    moreWrap.style.cssText = "text-align:center;margin-top:18px;grid-column:1/-1";
+    container.parentNode.appendChild(moreWrap);
+  }
+  if (list.length > MATCHES_VISIBLE) {
+    moreWrap.style.display = "block";
+    moreWrap.innerHTML = `<button type="button" class="btn btn-primary" id="btnToggleMatches">
+      ${matchesExpanded ? "Скрыть старые матчи" : `Показать ещё (${list.length - MATCHES_VISIBLE})`}
+    </button>`;
+    document.getElementById("btnToggleMatches").onclick = () => {
+      matchesExpanded = !matchesExpanded;
+      renderMatches(matches, teams);
+    };
+  } else {
+    moreWrap.style.display = "none";
+  }
+}
+
+function buildMatchCard(m, teams) {
+  const home = teams.find(t => t.id === m.homeId);
+  const away = teams.find(t => t.id === m.awayId);
+  const isFinished = m.status === "finished";
+  const score = isFinished ? `${m.homeScore ?? 0} : ${m.awayScore ?? 0}` : "vs";
+  const dateStr = m.date
+    ? new Date(m.date).toLocaleDateString("ru-RU", {
+        day: "numeric", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      })
+    : "";
+  const live = m.streamUrl && (m.status === "live" || m.live);
+  const card = document.createElement("div");
+  card.className = "match-card fade-in";
+  card.dataset.matchId = m.id;
+  card.innerHTML = `
+    <div class="match-date">${dateStr} ${stageBadge(m.stage)}
+      ${live ? '<span class="live-dot">● LIVE</span>' : ""}
+    </div>
+    <div class="match-teams match-teams-logos">
+      <div class="match-team-block">
+        <img class="match-team-logo" src="${teamLogoUrl(home)}" alt=""
+             onerror="this.src='https://via.placeholder.com/48?text=FC'">
+        <div class="match-team">${home?.name || "—"}</div>
       </div>
-      <div style="text-align:center">
-        <span class="match-status ${isFinished ? "status-finished" : "status-scheduled"}">
-          ${isFinished ? "Завершён" : "Скоро"}
-        </span>
+      <div class="match-score">${score}</div>
+      <div class="match-team-block">
+        <img class="match-team-logo" src="${teamLogoUrl(away)}" alt=""
+             onerror="this.src='https://via.placeholder.com/48?text=FC'">
+        <div class="match-team">${away?.name || "—"}</div>
       </div>
-    `;
-    card.addEventListener("click", () => openMatchModal(m, home, away));
-    container.appendChild(card);
-  });
+    </div>
+    <div style="text-align:center">
+      <span class="match-status ${isFinished ? "status-finished" : "status-scheduled"}">
+        ${isFinished ? "Завершён" : (live ? "В эфире" : "Скоро")}
+      </span>
+    </div>`;
+  card.addEventListener("click", () => openMatchModal(m, home, away));
+  return card;
 }
 
 function openMatchModal(m, home, away) {
@@ -92,10 +122,8 @@ function openMatchModal(m, home, away) {
     { lbl: "Удары", h: m.homeShots, a: m.awayShots },
     { lbl: "Удары в створ", h: m.homeShotsOn, a: m.awayShotsOn },
     { lbl: "Угловые", h: m.homeCorners, a: m.awayCorners },
-    { lbl: "Фолы", h: m.homeFouls, a: m.awayFouls },
     { lbl: "Жёлтые карточки", h: m.homeYellow, a: m.awayYellow },
-    { lbl: "Красные карточки", h: m.homeRed, a: m.awayRed },
-    { lbl: "Офсайды", h: m.homeOffsides, a: m.awayOffsides }
+    { lbl: "Красные карточки", h: m.homeRed, a: m.awayRed }
   ].filter(s => s.h != null || s.a != null);
 
   let statsHtml = "";
@@ -107,19 +135,19 @@ function openMatchModal(m, home, away) {
           <span class="md-val" style="text-align:right">${s.h ?? "—"}</span>
           <span class="md-lbl">${s.lbl}</span>
           <span class="md-val" style="text-align:left">${s.a ?? "—"}</span>
-        </div>
-      `).join("") + `</div>`;
+        </div>`).join("") + `</div>`;
   }
 
-  let scorersHtml = "";
-  if (m.scorers) {
-    scorersHtml = `<div style="margin-top:16px;font-size:0.9rem;color:var(--text-muted)">
-      <strong style="color:var(--text)">Голы:</strong> ${m.scorers}
-    </div>`;
-  }
+  const scorersHtml = m.scorers
+    ? `<div style="margin-top:16px;font-size:0.9rem;color:var(--text-muted)">
+        <strong style="color:var(--text)">Голы:</strong> ${m.scorers}</div>`
+    : "";
 
   const stageHtml = m.stage && m.stage !== "regular"
-    ? `<div style="margin-bottom:8px">${stageBadge(m.stage)}</div>`
+    ? `<div style="margin-bottom:8px">${stageBadge(m.stage)}</div>` : "";
+
+  const streamBtn = m.streamUrl
+    ? `<button type="button" class="btn btn-primary" id="btnMatchStream" style="margin-top:10px">▶ Смотреть трансляцию</button>`
     : "";
 
   overlay.querySelector(".modal-body").innerHTML = `
@@ -143,84 +171,162 @@ function openMatchModal(m, home, away) {
         ${isFinished ? "Завершён" : "Скоро"}
       </span>
       ${scorersHtml}
-      <div style="margin-top:20px">
-        <button type="button" class="btn btn-primary" id="btnMatchPoster">
-          📥 Скачать картинку для поста
-        </button>
+      <div style="margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px">
+        <button type="button" class="btn btn-primary" id="btnMatchPoster">📥 Скачать картинку для поста</button>
+        ${streamBtn}
       </div>
     </div>
-    ${statsHtml}
-  `;
+    ${statsHtml}`;
   overlay.classList.add("active");
   document.body.style.overflow = "hidden";
 
-  const btn = document.getElementById("btnMatchPoster");
-  if (btn) {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      if (typeof downloadMatchPoster === "function") downloadMatchPoster(m, home, away);
-      else alert("Модуль постера не загружен");
-    });
-  }
+  document.getElementById("btnMatchPoster")?.addEventListener("click", e => {
+    e.stopPropagation();
+    if (typeof openPosterThemePicker === "function") openPosterThemePicker(m, home, away);
+    else if (typeof downloadMatchPoster === "function") downloadMatchPoster(m, home, away);
+  });
+  document.getElementById("btnMatchStream")?.addEventListener("click", e => {
+    e.stopPropagation();
+    openStreamPlayer(m.streamUrl, `${homeName} — ${awayName}`);
+  });
 }
 
-/** Сетка плей-офф на сайте */
-function renderPlayoffs(matches, teams) {
-  const root = document.getElementById("playoffs-root");
-  if (!root) return;
+function openStreamPlayer(url, title) {
+  if (!url) return;
+  let ov = document.getElementById("streamModal");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "streamModal";
+    ov.className = "modal-overlay";
+    ov.innerHTML = `<div class="modal" style="max-width:900px;width:95%">
+      <button type="button" class="modal-close" id="streamModalClose">×</button>
+      <div class="modal-body" id="streamModalBody"></div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click", e => { if (e.target === ov) closeStream(); });
+    document.getElementById("streamModalClose").onclick = closeStream;
+  }
+  const body = document.getElementById("streamModalBody");
+  const isYt = /youtube\.com|youtu\.be/.test(url);
+  const isVk = /vk\.com|vkvideo/.test(url);
+  let embed = "";
+  if (isYt) {
+    let id = "";
+    const m1 = url.match(/[?&]v=([^&]+)/);
+    const m2 = url.match(/youtu\.be\/([^?&]+)/);
+    id = (m1 && m1[1]) || (m2 && m2[1]) || "";
+    embed = id
+      ? `<div class="stream-frame"><iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allowfullscreen allow="autoplay;encrypted-media"></iframe></div>`
+      : `<p><a href="${url}" target="_blank" rel="noopener">Открыть трансляцию</a></p>`;
+  } else if (isVk || url.includes("iframe") || url.includes("embed")) {
+    embed = `<div class="stream-frame"><iframe src="${url.replace("/video", "/video_ext.php").includes("http") ? url : url}" allowfullscreen></iframe></div>
+      <p style="margin-top:8px;font-size:0.85rem"><a href="${url}" target="_blank" rel="noopener">Открыть в новой вкладке</a></p>`;
+  } else {
+    embed = `<p style="text-align:center;padding:20px">
+      <a class="btn btn-primary" href="${url}" target="_blank" rel="noopener">Открыть трансляцию</a>
+      <br><small style="opacity:0.6">Ссылка откроется в новой вкладке (Twitch, Kick и др.)</small>
+    </p>`;
+  }
+  body.innerHTML = `<h3 style="margin-bottom:12px;text-align:center">${title || "Трансляция"}</h3>${embed}`;
+  ov.classList.add("active");
+  document.body.style.overflow = "hidden";
+}
 
-  const order = ["r16", "qf", "sf", "third", "final"];
-  const playoffMatches = matches.filter(m => order.includes(m.stage));
-  if (!playoffMatches.length) {
-    root.innerHTML = "<p style='text-align:center;opacity:0.5'>Плей-офф пока не начался. Матчи 1/8, 1/4, 1/2 и финал задаются в админке.</p>";
+function closeStream() {
+  const ov = document.getElementById("streamModal");
+  if (!ov) return;
+  ov.classList.remove("active");
+  const body = document.getElementById("streamModalBody");
+  if (body) body.innerHTML = "";
+  document.body.style.overflow = "";
+}
+
+/** Анимированная лента ближайших матчей на главной */
+function renderUpcomingHero(matches, teams) {
+  const el = document.getElementById("upcoming-ticker");
+  if (!el) return;
+  const now = Date.now();
+  const upcoming = matches
+    .filter(m => m.status !== "finished")
+    .filter(m => !m.date || new Date(m.date).getTime() >= now - 3 * 3600 * 1000)
+    .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0))
+    .slice(0, 12);
+
+  if (!upcoming.length) {
+    el.innerHTML = "<div class='ticker-empty'>Ближайшие матчи появятся здесь</div>";
     return;
   }
 
+  const items = upcoming.map(m => {
+    const home = teams.find(t => t.id === m.homeId);
+    const away = teams.find(t => t.id === m.awayId);
+    const d = m.date
+      ? new Date(m.date).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+      : "Скоро";
+    const live = m.streamUrl && (m.status === "live" || m.live);
+    return `<div class="ticker-item" data-mid="${m.id}">
+      <span class="ticker-date">${d}</span>
+      <img src="${teamLogoUrl(home)}" alt="" onerror="this.style.display='none'">
+      <strong>${home?.name || "?"}</strong>
+      <span class="ticker-vs">${live ? "● LIVE" : "vs"}</span>
+      <strong>${away?.name || "?"}</strong>
+      <img src="${teamLogoUrl(away)}" alt="" onerror="this.style.display='none'">
+    </div>`;
+  }).join("");
+
+  // дублируем для бесконечной анимации
+  el.innerHTML = `<div class="ticker-track">${items}${items}</div>`;
+  el.querySelectorAll(".ticker-item").forEach(node => {
+    node.addEventListener("click", () => {
+      const m = matches.find(x => x.id === node.dataset.mid);
+      if (!m) return;
+      openMatchModal(m, teams.find(t => t.id === m.homeId), teams.find(t => t.id === m.awayId));
+    });
+  });
+}
+
+function renderPlayoffs(matches, teams) {
+  const root = document.getElementById("playoffs-root");
+  if (!root) return;
+  const order = ["r16", "qf", "sf", "third", "final"];
+  const playoffMatches = matches.filter(m => order.includes(m.stage));
+  if (!playoffMatches.length) {
+    root.innerHTML = "<p style='text-align:center;opacity:0.5'>Плей-офф пока не начался. Стадии матчей задаются в админке.</p>";
+    return;
+  }
   const labels = window.STAGE_LABELS || {
     r16: "1/8 финала", qf: "1/4 финала", sf: "1/2 финала",
     final: "Финал", third: "Матч за 3-е место"
   };
-
   let html = "";
   order.forEach(stage => {
-    const list = playoffMatches
-      .filter(m => m.stage === stage)
+    const list = playoffMatches.filter(m => m.stage === stage)
       .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
     if (!list.length) return;
-    html += `<div class="playoff-round fade-in">
-      <h3 class="playoff-round-title">${labels[stage] || stage}</h3>
-      <div class="playoff-matches">`;
+    html += `<div class="playoff-round fade-in"><h3 class="playoff-round-title">${labels[stage]}</h3><div class="playoff-matches">`;
     list.forEach(m => {
       const home = teams.find(t => t.id === m.homeId);
       const away = teams.find(t => t.id === m.awayId);
       const isFinished = m.status === "finished";
       const score = isFinished ? `${m.homeScore ?? 0}:${m.awayScore ?? 0}` : "—";
       html += `<div class="playoff-match-card" data-mid="${m.id}">
-        <div class="po-team">
-          <img src="${teamLogoUrl(home)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'">
-          <span>${home?.name || "TBD"}</span>
-        </div>
+        <div class="po-team"><img src="${teamLogoUrl(home)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'"><span>${home?.name || "TBD"}</span></div>
         <div class="po-score">${score}</div>
-        <div class="po-team">
-          <img src="${teamLogoUrl(away)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'">
-          <span>${away?.name || "TBD"}</span>
-        </div>
+        <div class="po-team"><img src="${teamLogoUrl(away)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'"><span>${away?.name || "TBD"}</span></div>
       </div>`;
     });
     html += `</div></div>`;
   });
-
-  root.innerHTML = html || "<p style='text-align:center;opacity:0.5'>Нет матчей плей-офф</p>";
-
+  root.innerHTML = html;
   root.querySelectorAll(".playoff-match-card").forEach(el => {
     el.addEventListener("click", () => {
       const m = matches.find(x => x.id === el.dataset.mid);
       if (!m) return;
-      const home = teams.find(t => t.id === m.homeId);
-      const away = teams.find(t => t.id === m.awayId);
-      openMatchModal(m, home, away);
+      openMatchModal(m, teams.find(t => t.id === m.homeId), teams.find(t => t.id === m.awayId));
     });
   });
 }
 
 window.renderPlayoffs = renderPlayoffs;
+window.renderUpcomingHero = renderUpcomingHero;
+window.openStreamPlayer = openStreamPlayer;

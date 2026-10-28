@@ -231,6 +231,16 @@ function renderStandingsByTournaments(matches, teams, tournaments) {
     panelsEl.appendChild(panel);
     fillStandingsTbody(panel.querySelector("tbody"), standingsByTournament[tab.id] || []);
     bindSortHeaders(panel.querySelector("table"), tab.id);
+    const dl = document.createElement("div");
+    dl.style.cssText = "text-align:center;margin-top:14px";
+    dl.innerHTML = `<button type="button" class="btn btn-primary btn-dl-table" data-tid="${tab.id}">📥 Скачать таблицу для поста</button>`;
+    panel.appendChild(dl);
+    dl.querySelector("button").addEventListener("click", () => {
+      const rows = standingsByTournament[tab.id] || [];
+      const title = tabs.find(t => t.id === tab.id)?.title || "Таблица";
+      if (typeof downloadStandingsPoster === "function") downloadStandingsPoster(rows, title);
+      else alert("Модуль постера не загружен");
+    });
   });
 }
 

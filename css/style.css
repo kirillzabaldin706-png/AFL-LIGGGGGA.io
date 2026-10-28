@@ -832,3 +832,57 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 }
 .cookie-banner a { color: #7dd3fc; }
 .cookie-banner p { margin: 0; max-width: 720px; line-height: 1.45; }
+
+/* === Лента ближайших матчей === */
+.upcoming-section { padding-top: 12px; padding-bottom: 12px; overflow: hidden; }
+.upcoming-ticker { overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.ticker-track {
+  display: flex; gap: 16px; width: max-content;
+  animation: ticker-scroll 40s linear infinite;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card, #fff); border-radius: 999px;
+  padding: 10px 16px; box-shadow: var(--shadow, 0 4px 14px rgba(0,0,0,.08));
+  cursor: pointer; white-space: nowrap; font-size: 0.9rem;
+}
+.ticker-item img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+.ticker-date { font-size: 0.75rem; opacity: 0.65; }
+.ticker-vs { font-weight: 800; color: var(--accent, #0ea5e9); min-width: 28px; text-align: center; }
+.ticker-empty { text-align: center; opacity: 0.5; padding: 12px; }
+.live-dot { color: #ef4444; font-weight: 800; font-size: 0.75rem; margin-left: 6px; }
+
+/* === Выбор фона постера === */
+.poster-theme-picker {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.55); display: none;
+  align-items: center; justify-content: center; padding: 16px;
+}
+.poster-theme-picker.open { display: flex; }
+.ptp-card {
+  background: #fff; border-radius: 16px; padding: 20px;
+  max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto;
+}
+.ptp-card h3 { margin: 0 0 14px; text-align: center; }
+.ptp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.ptp-item {
+  border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px;
+  background: #f8fafc; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600;
+}
+.ptp-item:hover { border-color: #0ea5e9; }
+.ptp-swatch { width: 100%; height: 48px; border-radius: 8px; display: block; }
+
+/* === Ставки доп. рынки === */
+.bet-section-label { font-size: 0.75rem; opacity: 0.65; margin: 10px 0 6px; font-weight: 600; }
+.bet-odds-wrap { flex-wrap: wrap; }
+.bet-pick-sm { font-size: 0.78rem !important; padding: 6px 8px !important; }
+
+/* === Стрим === */
+.stream-frame { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
+.stream-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }

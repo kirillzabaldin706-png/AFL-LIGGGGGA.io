@@ -3,7 +3,7 @@
 // ============================================
 
 const REG_BONUS = 1000;
-const DEFAULT_ODDS = { home: 2.0, draw: 2.8, away: 2.2 };
+const DEFAULT_ODDS = { home: 2.0, draw: 2.8, away: 2.2, over25: 1.9, under25: 1.9, scorer: 3.5, btts_yes: 2.1, btts_no: 1.7 };
 
 let currentUser = null;
 let userProfile = null; // { stars, displayName, email }
@@ -182,15 +182,28 @@ function renderBetMatches() {
     const dateStr = m.date
       ? new Date(m.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
       : "";
+    const players = (window.globalPlayers || []).filter(p => p.teamId === m.homeId || p.teamId === m.awayId);
+    const scorerOpts = players.slice(0, 8).map(p =>
+      `<button type="button" class="bet-pick bet-pick-sm" data-pick="scorer:${p.id}" data-match="${m.id}" title="${p.name}">⚽ ${(p.name||"").split(" ").pop()} <span>${DEFAULT_ODDS.scorer}</span></button>`
+    ).join("");
     return `
       <div class="bet-card" data-match-id="${m.id}">
         <div class="bet-match-title">${home} — ${away}</div>
         <div class="bet-date">${dateStr}</div>
+        <div class="bet-section-label">Исход матча</div>
         <div class="bet-odds">
           <button type="button" class="bet-pick" data-pick="home" data-match="${m.id}">П1 <span>${DEFAULT_ODDS.home}</span></button>
           <button type="button" class="bet-pick" data-pick="draw" data-match="${m.id}">X <span>${DEFAULT_ODDS.draw}</span></button>
           <button type="button" class="bet-pick" data-pick="away" data-match="${m.id}">П2 <span>${DEFAULT_ODDS.away}</span></button>
         </div>
+        <div class="bet-section-label">Тотал голов</div>
+        <div class="bet-odds">
+          <button type="button" class="bet-pick" data-pick="over25" data-match="${m.id}">ТБ 2.5 <span>${DEFAULT_ODDS.over25}</span></button>
+          <button type="button" class="bet-pick" data-pick="under25" data-match="${m.id}">ТМ 2.5 <span>${DEFAULT_ODDS.under25}</span></button>
+          <button type="button" class="bet-pick" data-pick="btts_yes" data-match="${m.id}">ОЗ да <span>${DEFAULT_ODDS.btts_yes}</span></button>
+          <button type="button" class="bet-pick" data-pick="btts_no" data-match="${m.id}">ОЗ нет <span>${DEFAULT_ODDS.btts_no}</span></button>
+        </div>
+        ${scorerOpts ? `<div class="bet-section-label">Кто забьёт (любой гол)</div><div class="bet-odds bet-odds-wrap">${scorerOpts}</div>` : ""}
         <div class="bet-amount-row">
           <input type="number" min="10" step="10" value="50" class="bet-amount" data-match="${m.id}" placeholder="Сумма ⭐">
           <button type="button" class="btn-save bet-place-btn" data-match="${m.id}">Поставить</button>
@@ -222,14 +235,15 @@ async function placeBet(matchId) {
   const card = document.querySelector(`.bet-card[data-match-id="${matchId}"]`);
   if (!card) return;
   const pick = card.dataset.pick;
-  if (!pick) return showToast("Выберите исход: П1, X или П2", true);
+  if (!pick) return showToast("Выберите исход ставки", true);
 
   const amountInput = card.querySelector(".bet-amount");
   const amount = Math.floor(Number(amountInput?.value) || 0);
   if (amount < 10) return showToast("Минимальная ставка 10 ⭐", true);
   if (amount > (userProfile.stars || 0)) return showToast("Недостаточно звёзд", true);
 
-  const odds = DEFAULT_ODDS[pick] || 2;
+  let odds = DEFAULT_ODDS[pick] || 2;
+  if (String(pick).startsWith("scorer:")) odds = DEFAULT_ODDS.scorer;
   const newStars = (userProfile.stars || 0) - amount;
 
   try {
@@ -280,9 +294,26 @@ async function settleOpenBets() {
       let result = "draw";
       if (hs > as) result = "home";
       else if (hs < as) result = "away";
+      const total = hs + as;
+      const scorersText = String(m.scorers || "").toLowerCase();
 
-      const pick = String(bet.pick || "").toLowerCase();
-      if (pick === result) {
+      const pick = String(bet.pick || "");
+      const pickL = pick.toLowerCase();
+      let won = false;
+      if (pickL === result) won = true;
+      else if (pickL === "over25") won = total > 2.5;
+      else if (pickL === "under25") won = total < 2.5;
+      else if (pickL === "btts_yes") won = hs > 0 && as > 0;
+      else if (pickL === "btts_no") won = hs === 0 || as === 0;
+      else if (pickL.startsWith("scorer:")) {
+        const pid = pick.slice(7);
+        const pl = (window.globalPlayers || []).find(p => p.id === pid);
+        const name = (pl?.name || "").toLowerCase();
+        const last = name.split(" ").pop() || "";
+        won = !!(name && (scorersText.includes(name) || (last.length > 2 && scorersText.includes(last))));
+      }
+
+      if (won) {
         const win = Math.floor(Number(bet.amount || 0) * Number(bet.odds || 2));
         await db.ref("bets/" + id).update({ status: "won", payout: win, settledAt: new Date().toISOString() });
         starsDelta += win;
