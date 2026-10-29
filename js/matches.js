@@ -3,7 +3,7 @@ let matchesExpanded = false;
 let matchesCache = { list: [], teams: [] };
 
 function teamLogoUrl(team) {
-  return team?.logo || "https://via.placeholder.com/64?text=FC";
+  return (team && team.logo) ? team.logo : "https://via.placeholder.com/64?text=FC";
 }
 
 function stageBadge(stage) {
@@ -19,37 +19,42 @@ function renderMatches(matches, teams) {
   const container = document.getElementById("matches-list");
   if (!container) return;
 
-  // Обновляем кэш только когда передали массив матчей (не null из кнопки «ещё»)
   if (Array.isArray(matches) && Array.isArray(teams)) {
-    const all = matches;
-    const regular = all.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
-    const source = regular.length ? regular : all;
-    const list = source.slice().sort((a, b) => {
-      const da = a.date ? new Date(a.date).getTime() : 0;
-      const db = b.date ? new Date(b.date).getTime() : 0;
-      return db - da;
-    });
-    matchesCache = { list, teams };
+    const regular = matches.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
+    const source = regular.length ? regular : matches.slice();
+    matchesCache = {
+      list: source.slice().sort((a, b) => {
+        const da = a && a.date ? new Date(a.date).getTime() : 0;
+        const db = b && b.date ? new Date(b.date).getTime() : 0;
+        return db - da;
+      }),
+      teams: teams.slice()
+    };
   }
 
   const list = matchesCache.list || [];
   const teamsList = matchesCache.teams || [];
 
   if (!list.length) {
-    container.innerHTML = "<p style='text-align:center;opacity:0.5;grid-column:1/-1'>Матчей пока нет</p>";
+    container.innerHTML = '<p class="empty-hint" style="opacity:1;color:#64748b">Матчей пока нет</p>';
     const more = document.getElementById("matches-show-more");
-    if (more) more.style.display = "none";
+    if (more) { more.style.display = "none"; more.innerHTML = ""; }
     return;
   }
 
   const visible = matchesExpanded ? list : list.slice(0, MATCHES_VISIBLE);
-  container.innerHTML = "";
-  visible.forEach(m => {
-    try {
-      container.appendChild(buildMatchCard(m, teamsList));
-    } catch (err) {
-      console.warn("match card error", err, m);
-    }
+
+  // Рисуем через innerHTML — без fade-in (он делал opacity:0)
+  container.innerHTML = visible.map(m => matchCardHTML(m, teamsList)).join("");
+
+  container.querySelectorAll(".match-card[data-match-id]").forEach(card => {
+    card.addEventListener("click", () => {
+      const m = list.find(x => x.id === card.dataset.matchId);
+      if (!m) return;
+      const home = teamsList.find(t => t.id === m.homeId);
+      const away = teamsList.find(t => t.id === m.awayId);
+      openMatchModal(m, home, away);
+    });
   });
 
   let moreWrap = document.getElementById("matches-show-more");
@@ -57,22 +62,22 @@ function renderMatches(matches, teams) {
     moreWrap = document.createElement("div");
     moreWrap.id = "matches-show-more";
     moreWrap.className = "matches-show-more";
-    // Вставляем сразу после сетки матчей
     container.insertAdjacentElement("afterend", moreWrap);
   }
+
   if (list.length > MATCHES_VISIBLE) {
     moreWrap.style.display = "block";
-    moreWrap.innerHTML = `<button type="button" class="btn btn-primary" id="btnToggleMatches">
-      ${matchesExpanded ? "Скрыть старые матчи" : `Показать ещё (${list.length - MATCHES_VISIBLE})`}
-    </button>`;
+    const left = list.length - MATCHES_VISIBLE;
+    moreWrap.innerHTML = matchesExpanded
+      ? '<button type="button" class="btn btn-primary" id="btnToggleMatches">Скрыть старые матчи</button>'
+      : `<button type="button" class="btn btn-primary" id="btnToggleMatches">Показать ещё (${left})</button>`;
     const btn = document.getElementById("btnToggleMatches");
     if (btn) {
-      btn.onclick = (e) => {
+      btn.onclick = function (e) {
         e.preventDefault();
         e.stopPropagation();
         matchesExpanded = !matchesExpanded;
-        // Только кэш — не передаём пустые аргументы
-        renderMatches(null, null);
+        renderMatches(); // без аргументов → только кэш
       };
     }
   } else {
@@ -81,44 +86,60 @@ function renderMatches(matches, teams) {
   }
 }
 
-function buildMatchCard(m, teams) {
-  const home = teams.find(t => t.id === m.homeId);
-  const away = teams.find(t => t.id === m.awayId);
+function matchCardHTML(m, teams) {
+  if (!m) return "";
+  const home = (teams || []).find(t => t.id === m.homeId);
+  const away = (teams || []).find(t => t.id === m.awayId);
   const isFinished = m.status === "finished";
   const score = isFinished ? `${m.homeScore ?? 0} : ${m.awayScore ?? 0}` : "vs";
-  const dateStr = m.date
-    ? new Date(m.date).toLocaleDateString("ru-RU", {
+  let dateStr = "";
+  try {
+    if (m.date) {
+      dateStr = new Date(m.date).toLocaleDateString("ru-RU", {
         day: "numeric", month: "long", year: "numeric",
         hour: "2-digit", minute: "2-digit"
-      })
-    : "";
+      });
+    }
+  } catch (e) {}
   const live = m.streamUrl && (m.status === "live" || m.live);
-  const card = document.createElement("div");
-  card.className = "match-card fade-in visible";
-  card.dataset.matchId = m.id;
-  card.innerHTML = `
+  const homeName = (home && home.name) || "—";
+  const awayName = (away && away.name) || "—";
+  const homeLogo = teamLogoUrl(home);
+  const awayLogo = teamLogoUrl(away);
+  return `<div class="match-card" data-match-id="${m.id}" style="opacity:1;transform:none;background:#fff">
     <div class="match-date">${dateStr} ${stageBadge(m.stage)}
       ${live ? '<span class="live-dot">● LIVE</span>' : ""}
     </div>
     <div class="match-teams match-teams-logos">
       <div class="match-team-block">
-        <img class="match-team-logo" src="${teamLogoUrl(home)}" alt=""
-             onerror="this.src='https://via.placeholder.com/48?text=FC'">
-        <div class="match-team">${home?.name || "—"}</div>
+        <img class="match-team-logo" src="${homeLogo}" alt="" onerror="this.src='https://via.placeholder.com/48?text=FC'">
+        <div class="match-team">${homeName}</div>
       </div>
       <div class="match-score">${score}</div>
       <div class="match-team-block">
-        <img class="match-team-logo" src="${teamLogoUrl(away)}" alt=""
-             onerror="this.src='https://via.placeholder.com/48?text=FC'">
-        <div class="match-team">${away?.name || "—"}</div>
+        <img class="match-team-logo" src="${awayLogo}" alt="" onerror="this.src='https://via.placeholder.com/48?text=FC'">
+        <div class="match-team">${awayName}</div>
       </div>
     </div>
     <div style="text-align:center">
       <span class="match-status ${isFinished ? "status-finished" : "status-scheduled"}">
         ${isFinished ? "Завершён" : (live ? "В эфире" : "Скоро")}
       </span>
-    </div>`;
-  card.addEventListener("click", () => openMatchModal(m, home, away));
+    </div>
+  </div>`;
+}
+
+function buildMatchCard(m, teams) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = matchCardHTML(m, teams);
+  const card = wrap.firstElementChild;
+  if (card) {
+    card.addEventListener("click", () => {
+      const home = (teams || []).find(t => t.id === m.homeId);
+      const away = (teams || []).find(t => t.id === m.awayId);
+      openMatchModal(m, home, away);
+    });
+  }
   return card;
 }
 

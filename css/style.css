@@ -1058,10 +1058,27 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
   min-height: 40px;
 }
 
-/* Матчи всегда видимы (не зависеть от scroll-observer) */
-.matches-grid .match-card.fade-in,
-.playoff-matches .playoff-match-card,
+
+
+
+/* CRITICAL: матчи всегда видны */
+#matches #matches-list,
+#matches-list.matches-grid {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
 #matches-list .match-card {
   opacity: 1 !important;
   transform: none !important;
+  visibility: visible !important;
+  display: block !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+.matches-show-more {
+  text-align: center;
+  margin: 20px 0;
+  display: block;
+  width: 100%;
 }
