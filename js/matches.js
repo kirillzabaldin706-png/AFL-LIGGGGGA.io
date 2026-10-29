@@ -19,12 +19,22 @@ function renderMatches(matches, teams) {
   const container = document.getElementById("matches-list");
   if (!container) return;
 
-  const regular = matches.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
-  const list = (regular.length ? regular : matches)
-    .slice()
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Сохраняем данные в кэш при загрузке; при «Показать ещё» берём только из кэша
+  if (Array.isArray(matches) && matches.length >= 0 && teams) {
+    const all = Array.isArray(matches) ? matches : [];
+    const regular = all.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
+    // Если все матчи — плей-офф, показываем их здесь тоже
+    const source = regular.length ? regular : all;
+    const list = source.slice().sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      return db - da;
+    });
+    matchesCache = { list, teams: Array.isArray(teams) ? teams : [] };
+  }
 
-  matchesCache = { list, teams };
+  const list = matchesCache.list || [];
+  const teamsList = matchesCache.teams || [];
 
   if (!list.length) {
     container.innerHTML = "<p style='text-align:center;opacity:0.5;grid-column:1/-1'>Матчей пока нет</p>";
@@ -35,26 +45,40 @@ function renderMatches(matches, teams) {
 
   const visible = matchesExpanded ? list : list.slice(0, MATCHES_VISIBLE);
   container.innerHTML = "";
-  visible.forEach(m => container.appendChild(buildMatchCard(m, teams)));
+  visible.forEach(m => {
+    try {
+      container.appendChild(buildMatchCard(m, teamsList));
+    } catch (err) {
+      console.warn("match card error", err, m);
+    }
+  });
 
   let moreWrap = document.getElementById("matches-show-more");
   if (!moreWrap) {
     moreWrap = document.createElement("div");
     moreWrap.id = "matches-show-more";
-    moreWrap.style.cssText = "text-align:center;margin-top:18px;grid-column:1/-1";
-    container.parentNode.appendChild(moreWrap);
+    moreWrap.className = "matches-show-more";
+    // Вставляем сразу после сетки матчей
+    container.insertAdjacentElement("afterend", moreWrap);
   }
   if (list.length > MATCHES_VISIBLE) {
     moreWrap.style.display = "block";
     moreWrap.innerHTML = `<button type="button" class="btn btn-primary" id="btnToggleMatches">
       ${matchesExpanded ? "Скрыть старые матчи" : `Показать ещё (${list.length - MATCHES_VISIBLE})`}
     </button>`;
-    document.getElementById("btnToggleMatches").onclick = () => {
-      matchesExpanded = !matchesExpanded;
-      renderMatches(matches, teams);
-    };
+    const btn = document.getElementById("btnToggleMatches");
+    if (btn) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        matchesExpanded = !matchesExpanded;
+        // Только кэш — не передаём пустые аргументы
+        renderMatches(null, null);
+      };
+    }
   } else {
     moreWrap.style.display = "none";
+    moreWrap.innerHTML = "";
   }
 }
 
@@ -241,16 +265,37 @@ function closeStream() {
   document.body.style.overflow = "";
 }
 
-/** Анимированная лента ближайших матчей на главной */
-function renderUpcomingHero(matches, teams) {
+/** Анимированная лента ближайших матчей на главной
+ * settings: { upcomingOn, upcomingTitle, upcomingMax }
+ */
+function renderUpcomingHero(matches, teams, settings) {
+  const section = document.getElementById("upcoming");
   const el = document.getElementById("upcoming-ticker");
   if (!el) return;
+
+  const s = settings || window.siteSettings || {};
+  if (s.upcomingOn === false) {
+    if (section) section.style.display = "none";
+    return;
+  }
+  if (section) section.style.display = "";
+
+  const titleEl = section?.querySelector(".section-title");
+  if (titleEl) titleEl.textContent = s.upcomingTitle || "Ближайшие матчи";
+
+  const maxN = Math.min(20, Math.max(1, Number(s.upcomingMax) || 8));
   const now = Date.now();
-  const upcoming = matches
+
+  let pool = (matches || [])
     .filter(m => m.status !== "finished")
-    .filter(m => !m.date || new Date(m.date).getTime() >= now - 3 * 3600 * 1000)
+    .filter(m => !m.date || new Date(m.date).getTime() >= now - 3 * 3600 * 1000);
+
+  const featured = pool.filter(m => m.featured);
+  if (featured.length) pool = featured;
+
+  const upcoming = pool
     .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0))
-    .slice(0, 12);
+    .slice(0, maxN);
 
   if (!upcoming.length) {
     el.innerHTML = "<div class='ticker-empty'>Ближайшие матчи появятся здесь</div>";

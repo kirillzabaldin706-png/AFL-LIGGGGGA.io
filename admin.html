@@ -143,6 +143,10 @@
             <label>Ссылка на трансляцию (YouTube / VK / Twitch)</label>
             <input type="url" id="matchStreamUrl" placeholder="https://youtube.com/watch?v=... или https://twitch.tv/...">
           </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="matchFeatured" style="width:auto;margin-right:8px"> Показать в ленте «Ближайшие матчи» на главной</label>
+            <p style="font-size:0.8rem;opacity:0.65;margin:6px 0 0">Если ни у одного матча галочка не стоит — в ленте все предстоящие матчи. Если стоит хотя бы у одного — только отмеченные.</p>
+          </div>
           <details style="margin-bottom:14px">
             <summary style="cursor:pointer;color:var(--text-muted);font-size:0.9rem;margin-bottom:10px">📊 Статистика матча (опционально)</summary>
             <div class="form-row">
@@ -410,7 +414,7 @@
       <div class="admin-form">
         <h3>Оформление сайта</h3>
         <form id="settingsForm">
-          <div class="form-group"><label>Заголовок на главной</label><input type="text" id="settingsTitle" placeholder="АФЛ 2026"></div>
+          <div class="form-group"><label>Заголовок сайта (hero)</label><input type="text" id="settingsTitle" placeholder="АФЛ 2026"></div>
           <div class="form-group">
             <label>Фон / эмблема АФЛ (повторяется на фоне)</label>
             <div class="upload-btn-wrap">
@@ -419,6 +423,19 @@
             <input type="hidden" id="settingsEmblemUrl">
             <img id="settingsEmblemPreview" style="max-width:120px;margin-top:10px;display:none;border-radius:8px">
           </div>
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border,#e2e8f0)">
+          <h3 style="margin:0 0 12px;font-size:1.05rem">Лента «Ближайшие матчи» на главной</h3>
+          <div class="form-group">
+            <label><input type="checkbox" id="settingsUpcomingOn" checked style="width:auto;margin-right:8px"> Показывать блок на главной</label>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Заголовок блока</label><input type="text" id="settingsUpcomingTitle" placeholder="Ближайшие матчи"></div>
+            <div class="form-group"><label>Макс. матчей в ленте</label><input type="number" id="settingsUpcomingMax" min="1" max="20" value="8"></div>
+          </div>
+          <p style="font-size:0.85rem;opacity:0.7;margin:0 0 12px">
+            По умолчанию в ленту попадают все матчи со статусом «Скоро» / LIVE.
+            Чтобы выбрать вручную — отметьте у матча галочку «В ленте на главной» (раздел Матчи).
+          </p>
           <button type="submit" class="btn-save">Сохранить оформление</button>
         </form>
       </div>

@@ -156,6 +156,12 @@ async function loadAdminData() {
 
     if (document.getElementById("settingsTitle")) {
       document.getElementById("settingsTitle").value = settingsVal.siteTitle || "";
+      const uo = document.getElementById("settingsUpcomingOn");
+      if (uo) uo.checked = settingsVal.upcomingOn !== false;
+      const ut = document.getElementById("settingsUpcomingTitle");
+      if (ut) ut.value = settingsVal.upcomingTitle || "Ближайшие матчи";
+      const um = document.getElementById("settingsUpcomingMax");
+      if (um) um.value = settingsVal.upcomingMax || 8;
       document.getElementById("settingsEmblemUrl").value = settingsVal.emblemUrl || "";
     }
 
@@ -290,7 +296,8 @@ function setupMatchForm() {
       scorers: document.getElementById("matchScorers")?.value?.trim() || "",
       tournamentId: document.getElementById("matchTournament")?.value || "",
       stage: document.getElementById("matchStage")?.value || "regular",
-      streamUrl: document.getElementById("matchStreamUrl")?.value?.trim() || ""
+      streamUrl: document.getElementById("matchStreamUrl")?.value?.trim() || "",
+      featured: !!document.getElementById("matchFeatured")?.checked
     };
     if (!data.tournamentId) data.tournamentId = null;
     try {
@@ -342,6 +349,8 @@ function editMatch(id) {
   if (ms) ms.value = m.stage || "regular";
   const msu = document.getElementById("matchStreamUrl");
   if (msu) msu.value = m.streamUrl || "";
+  const mf = document.getElementById("matchFeatured");
+  if (mf) mf.checked = !!m.featured;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
   set("matchHomePoss", m.homePossession);
   set("matchAwayPoss", m.awayPossession);
@@ -859,6 +868,9 @@ function setupSettingsForm() {
   document.getElementById("settingsForm")?.addEventListener("submit", async e => {
     e.preventDefault();
     const siteTitle = document.getElementById("settingsTitle").value.trim();
+    const upcomingOn = document.getElementById("settingsUpcomingOn")?.checked !== false;
+    const upcomingTitle = document.getElementById("settingsUpcomingTitle")?.value?.trim() || "Ближайшие матчи";
+    const upcomingMax = Math.min(20, Math.max(1, Number(document.getElementById("settingsUpcomingMax")?.value) || 8));
     const file = document.getElementById("settingsEmblem")?.files[0];
     let emblemUrl = document.getElementById("settingsEmblemUrl").value;
     if (file) {
@@ -866,7 +878,13 @@ function setupSettingsForm() {
       emblemUrl = await uploadToImgbb(file) || emblemUrl;
     }
     try {
-      await db.ref("settings").update({ siteTitle, emblemUrl: emblemUrl || "" });
+      await db.ref("settings").update({
+        siteTitle,
+        emblemUrl: emblemUrl || "",
+        upcomingOn,
+        upcomingTitle,
+        upcomingMax
+      });
       document.getElementById("settingsEmblemUrl").value = emblemUrl || "";
       showToast("Оформление сохранено");
     } catch (err) { showToast(err.message, true); }

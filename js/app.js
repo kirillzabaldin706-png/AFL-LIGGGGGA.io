@@ -101,8 +101,12 @@ async function loadAllData() {
       console.log("Firebase: команд пока нет. Добавьте их в админке.");
     }
 
+    const settings = settingsSnap.val() || {};
+    window.siteSettings = settings;
+    applySiteSettings(settings);
+
     renderMatches(matches, teams);
-    if (typeof renderUpcomingHero === "function") renderUpcomingHero(matches, teams);
+    if (typeof renderUpcomingHero === "function") renderUpcomingHero(matches, teams, settings);
     if (typeof renderPlayoffs === "function") renderPlayoffs(matches, teams);
     renderStats(players);
     renderTeams(teams);
@@ -110,7 +114,6 @@ async function loadAllData() {
     renderAds(ads);
     loadPredictions(matches, teams);
     const staff = Object.entries(staffSnap.val() || {}).map(([id, s]) => ({ id, ...s }));
-    const settings = settingsSnap.val() || {};
     // tournaments already loaded separately if needed
     let tournaments = [];
     try {
@@ -131,7 +134,6 @@ async function loadAllData() {
       renderStandings(calculateStandings(matches, teams));
     }
     renderStaff(staff);
-    applySiteSettings(settings);
     if (typeof setBetContext === "function") setBetContext(matches, teams);
     if (typeof loadShop === "function") loadShop();
     if (typeof window.__userSysInit === "undefined" && typeof initUserSystem === "function") {
