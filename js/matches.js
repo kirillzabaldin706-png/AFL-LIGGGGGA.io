@@ -19,18 +19,17 @@ function renderMatches(matches, teams) {
   const container = document.getElementById("matches-list");
   if (!container) return;
 
-  // Сохраняем данные в кэш при загрузке; при «Показать ещё» берём только из кэша
-  if (Array.isArray(matches) && matches.length >= 0 && teams) {
-    const all = Array.isArray(matches) ? matches : [];
+  // Обновляем кэш только когда передали массив матчей (не null из кнопки «ещё»)
+  if (Array.isArray(matches) && Array.isArray(teams)) {
+    const all = matches;
     const regular = all.filter(m => !m.stage || m.stage === "regular" || m.stage === "group");
-    // Если все матчи — плей-офф, показываем их здесь тоже
     const source = regular.length ? regular : all;
     const list = source.slice().sort((a, b) => {
       const da = a.date ? new Date(a.date).getTime() : 0;
       const db = b.date ? new Date(b.date).getTime() : 0;
       return db - da;
     });
-    matchesCache = { list, teams: Array.isArray(teams) ? teams : [] };
+    matchesCache = { list, teams };
   }
 
   const list = matchesCache.list || [];
@@ -95,7 +94,7 @@ function buildMatchCard(m, teams) {
     : "";
   const live = m.streamUrl && (m.status === "live" || m.live);
   const card = document.createElement("div");
-  card.className = "match-card fade-in";
+  card.className = "match-card fade-in visible";
   card.dataset.matchId = m.id;
   card.innerHTML = `
     <div class="match-date">${dateStr} ${stageBadge(m.stage)}
@@ -348,7 +347,7 @@ function renderPlayoffs(matches, teams) {
     const list = playoffMatches.filter(m => m.stage === stage)
       .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
     if (!list.length) return;
-    html += `<div class="playoff-round fade-in"><h3 class="playoff-round-title">${labels[stage]}</h3><div class="playoff-matches">`;
+    html += `<div class="playoff-round fade-in visible"><h3 class="playoff-round-title">${labels[stage]}</h3><div class="playoff-matches">`;
     list.forEach(m => {
       const home = teams.find(t => t.id === m.homeId);
       const away = teams.find(t => t.id === m.awayId);

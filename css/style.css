@@ -1057,3 +1057,11 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 .matches-grid {
   min-height: 40px;
 }
+
+/* Матчи всегда видимы (не зависеть от scroll-observer) */
+.matches-grid .match-card.fade-in,
+.playoff-matches .playoff-match-card,
+#matches-list .match-card {
+  opacity: 1 !important;
+  transform: none !important;
+}
