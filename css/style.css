@@ -1152,3 +1152,65 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 @media (max-width: 480px) {
   .pitch-photo-wrap { width: 56px; height: 56px; }
 }
+
+
+/* Полноэкранный просмотр фото */
+.img-lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(0,0,0,0.92);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  cursor: zoom-out;
+}
+.img-lightbox.open {
+  display: flex;
+  flex-direction: column;
+}
+.img-lightbox-img {
+  max-width: min(96vw, 1200px);
+  max-height: 85vh;
+  width: auto;
+  height: auto;
+  object-fit: contain !important;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.img-lightbox-cap {
+  color: rgba(255,255,255,0.85);
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.95rem;
+  max-width: 90vw;
+}
+.img-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+}
+.img-lightbox-close:hover { background: rgba(255,255,255,0.3); }
+
+.news-card img,
+.team-card img,
+.staff-card img,
+.player-card-photo,
+.modal-player-photo,
+.pitch-photo-wrap img,
+.tournament-logo,
+.shop-card img {
+  cursor: zoom-in;
+}

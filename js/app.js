@@ -576,3 +576,78 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (typeof loadShop === "function") loadShop();
 });
+
+
+// ========== LIGHTBOX: фото на весь экран ==========
+function openLightbox(src, caption) {
+  if (!src || src.includes("placeholder")) return;
+  let ov = document.getElementById("imgLightbox");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "imgLightbox";
+    ov.className = "img-lightbox";
+    ov.innerHTML = `
+      <button type="button" class="img-lightbox-close" aria-label="Закрыть">×</button>
+      <img class="img-lightbox-img" alt="">
+      <div class="img-lightbox-cap"></div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener("click", e => {
+      if (e.target === ov || e.target.classList.contains("img-lightbox-close")) closeLightbox();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") closeLightbox();
+    });
+  }
+  const img = ov.querySelector(".img-lightbox-img");
+  const cap = ov.querySelector(".img-lightbox-cap");
+  img.src = src;
+  cap.textContent = caption || "";
+  ov.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeLightbox() {
+  const ov = document.getElementById("imgLightbox");
+  if (!ov) return;
+  ov.classList.remove("open");
+  const img = ov.querySelector(".img-lightbox-img");
+  if (img) img.src = "";
+  document.body.style.overflow = "";
+}
+
+function initImageLightbox() {
+  if (window.__lightboxInit) return;
+  window.__lightboxInit = true;
+  document.addEventListener("click", e => {
+    const t = e.target;
+    if (!t || t.tagName !== "IMG") return;
+    if (t.classList.contains("blurred")) return;
+    if (t.closest(".header") || t.closest(".bet-slip-modal") || t.closest(".admin-layout")) return;
+    if (t.closest("#cookie-banner")) return;
+    const src = t.currentSrc || t.src;
+    if (!src || src.includes("placeholder") || src.includes("via.placeholder")) return;
+    if (t.classList.contains("modal-team-logo") || t.classList.contains("match-team-logo")) {
+      e.stopPropagation();
+      openLightbox(src, t.alt || "");
+      return;
+    }
+    if (t.closest(".news-card") || t.closest(".ads-banner") || t.closest(".ads-list") ||
+        t.closest(".team-card") || t.classList.contains("player-card-photo") ||
+        t.classList.contains("modal-player-photo") || t.closest(".pitch-photo-wrap") ||
+        t.closest(".staff-card") || t.classList.contains("tournament-logo") ||
+        t.closest(".shop-card") || t.classList.contains("lightboxable")) {
+      e.preventDefault();
+      e.stopPropagation();
+      const caption = t.alt || t.closest(".news-card")?.querySelector("h3, .news-title")?.textContent || "";
+      openLightbox(src, (caption || "").trim());
+    }
+  }, true);
+}
+
+window.openLightbox = openLightbox;
+window.closeLightbox = closeLightbox;
+window.initImageLightbox = initImageLightbox;
+try {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initImageLightbox);
+  else initImageLightbox();
+} catch (e) {}
