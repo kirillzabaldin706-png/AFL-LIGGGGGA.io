@@ -27,8 +27,11 @@ function calculateStandings(matches, teams, tournamentId, enrolledTeamIds) {
     };
   });
 
+  // Плей-офф (1/8, 1/4, 1/2, финал, 3-е место) НЕ влияет на турнирную таблицу
+  const PLAYOFF_STAGES = new Set(["r16", "qf", "sf", "final", "third"]);
   const sortedMatches = [...matches]
     .filter(m => m.status === "finished")
+    .filter(m => !PLAYOFF_STAGES.has(m.stage))
     .filter(m => {
       if (tournamentId === "__none__") return !m.tournamentId;
       if (tournamentId) return m.tournamentId === tournamentId;

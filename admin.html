@@ -343,19 +343,36 @@
     <!-- КОМАНДА ТУРА -->
     <div id="panel-totw" class="admin-panel">
       <div class="admin-form">
-        <h3 id="totwFormTitle">Добавить команду тура</h3>
+        <h3 id="totwFormTitle">Добавить лучший состав</h3>
         <form id="totwForm">
           <input type="hidden" id="totwId">
           <div class="form-row">
             <div class="form-group">
-              <label>Название / Тур *</label>
-              <input type="text" id="totwTitle" required placeholder="Команда 1-го тура">
+              <label>Заголовок на сайте *</label>
+              <input type="text" id="totwTitle" required placeholder="Лучший состав года · 2026">
             </div>
             <div class="form-group">
-              <label>Номер тура</label>
-              <input type="number" id="totwRound" min="1" value="1">
+              <label>Номер / порядок</label>
+              <input type="number" id="totwRound" min="1" value="1" title="Больше = выше в списке">
             </div>
           </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Турнир (необязательно)</label>
+              <select id="totwTournament">
+                <option value="">— Общий / сезон —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Тип</label>
+              <select id="totwKind">
+                <option value="round">Команда тура</option>
+                <option value="season">Лучший состав года / сезона</option>
+                <option value="tournament">Состав турнира</option>
+              </select>
+            </div>
+          </div>
+          <p style="font-size:0.85rem;opacity:0.7;margin:0 0 12px">На сайте сверху будет ваш заголовок (например «Лучший состав года»). Можно создать несколько составов — переключение вкладками.</p>
           <div class="form-group">
             <label>Игроки (выберите лучших)</label>
             <div id="totwPlayersCheckboxes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-height:280px;overflow-y:auto;padding:8px;background:var(--bg);border-radius:10px"></div>

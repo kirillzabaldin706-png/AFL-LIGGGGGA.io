@@ -398,80 +398,103 @@ function autoSelectTeamOfTheRound(players) {
 function renderTeamOfTheRound(totwList, players) {
   const container = document.getElementById("totw-list");
   const label = document.getElementById("totw-round-label");
+  const tabsEl = document.getElementById("totw-tabs");
   if (!container) return;
 
-  const sorted = [...(totwList || [])].sort((a, b) => (b.round || 0) - (a.round || 0));
-  const current = sorted[0];
-
-  let list = [];
-  let labelText = "";
-
-  if (current && current.players && current.players.length) {
-    labelText = current.title || ("Тур " + current.round);
-    list = current.players.map(pid => {
-      return players.find(pl => pl.id === pid) || { id: pid, name: "?", consent: false };
-    });
-  } else {
-    labelText = "Авто-расчёт по статистике сезона";
-    list = autoSelectTeamOfTheRound(players);
-  }
-
-  if (label) label.textContent = labelText;
-
-  if (!list.length) {
-    container.innerHTML = "<p style='text-align:center;opacity:0.5;grid-column:1/-1'>Пока нет данных для команды тура</p>";
-    return;
-  }
-
-  // Группировка по линиям для визуала
-  const order = ["Вратарь", "Защитник", "Полузащитник", "Нападающий"];
-  const groups = { "Вратарь": [], "Защитник": [], "Полузащитник": [], "Нападающий": [], "": [] };
-  list.forEach(p => {
-    const pos = p.position || "";
-    if (groups[pos] !== undefined) groups[pos].push(p);
-    else groups[""].push(p);
+  const sorted = [...(totwList || [])].sort((a, b) => {
+    // сезон / год выше, потом по round
+    const rank = { season: 3, tournament: 2, round: 1 };
+    const ra = rank[a.kind] || 1;
+    const rb = rank[b.kind] || 1;
+    if (rb !== ra) return rb - ra;
+    return (b.round || 0) - (a.round || 0);
   });
 
-  let html = "";
-  const renderCard = (p) => {
-    const photo = getPlayerPhoto(p);
-    const g = p.goals || 0, a = p.assists || 0;
-    return `
-      <div class="pitch-player" data-player-id="${p.id}">
-        <img src="${photo.url}" class="${photo.blurred ? "blurred" : ""}"
-             onerror="this.src='https://via.placeholder.com/72?text=?'">
+  const renderPitch = (list, titleText) => {
+    if (label) label.textContent = titleText || "";
+    if (!list.length) {
+      container.innerHTML = "<p style='text-align:center;opacity:0.5'>Пока нет данных для состава</p>";
+      return;
+    }
+    const groups = { "Вратарь": [], "Защитник": [], "Полузащитник": [], "Нападающий": [], "": [] };
+    list.forEach(p => {
+      const pos = p.position || "";
+      if (groups[pos] !== undefined) groups[pos].push(p);
+      else groups[""].push(p);
+    });
+    const renderCard = (p) => {
+      const photo = typeof getPlayerPhoto === "function" ? getPlayerPhoto(p) : { url: p.photo || "https://via.placeholder.com/72?text=?", blurred: !p.consent };
+      const g = p.goals || 0, a = p.assists || 0;
+      return `<div class="pitch-player" data-player-id="${p.id}">
+        <div class="pitch-photo-wrap">
+          <img src="${photo.url}" class="${photo.blurred ? "blurred" : ""}" alt=""
+               onerror="this.src='https://via.placeholder.com/72?text=?'">
+        </div>
         <div class="pname">${p.name}</div>
         <div class="pstats">${g}Г · ${a}П</div>
       </div>`;
+    };
+    let html = "";
+    const lines = [
+      ["Нападающий", groups["Нападающий"]],
+      ["Полузащитник", groups["Полузащитник"]],
+      ["Защитник", groups["Защитник"]],
+      ["Вратарь", groups["Вратарь"]]
+    ];
+    lines.forEach(([lab, arr]) => {
+      if (!arr.length) return;
+      html += `<div class="pitch-label">${lab}</div><div class="pitch-line">`;
+      arr.forEach(p => { html += renderCard(p); });
+      html += `</div>`;
+    });
+    if (groups[""].length) {
+      html += `<div class="pitch-line">`;
+      groups[""].forEach(p => { html += renderCard(p); });
+      html += `</div>`;
+    }
+    container.innerHTML = html;
+    container.querySelectorAll(".pitch-player[data-player-id]").forEach(el => {
+      el.addEventListener("click", () => {
+        const player = players.find(p => p.id === el.dataset.playerId);
+        if (player && typeof openPlayerModal === "function") openPlayerModal(player);
+      });
+    });
   };
 
-  // Поле 8×8: сверху нападающие, потом ПЗ, защита, вратарь внизу
-  const lines = [
-    ["Нападающий", groups["Нападающий"]],
-    ["Полузащитник", groups["Полузащитник"]],
-    ["Защитник", groups["Защитник"]],
-    ["Вратарь", groups["Вратарь"]]
-  ];
-  lines.forEach(([label, arr]) => {
-    if (!arr.length) return;
-    html += `<div class="pitch-label">${label}</div><div class="pitch-line">`;
-    arr.forEach(p => { html += renderCard(p); });
-    html += `</div>`;
-  });
-  if (groups[""].length) {
-    html += `<div class="pitch-line">`;
-    groups[""].forEach(p => { html += renderCard(p); });
-    html += `</div>`;
+  const resolvePlayers = (entry) => {
+    if (!entry || !entry.players) return [];
+    const ids = Array.isArray(entry.players) ? entry.players : Object.values(entry.players || {});
+    return ids.map(pid => players.find(pl => pl.id === pid) || { id: pid, name: "?", consent: false });
+  };
+
+  if (!sorted.length) {
+    if (tabsEl) tabsEl.innerHTML = "";
+    const auto = typeof autoSelectTeamOfTheRound === "function" ? autoSelectTeamOfTheRound(players) : [];
+    renderPitch(auto, "Авто-расчёт по статистике сезона");
+    return;
   }
 
-  container.innerHTML = html;
+  // Вкладки, если составов больше одного
+  if (tabsEl) {
+    if (sorted.length > 1) {
+      tabsEl.innerHTML = sorted.map((t, i) =>
+        `<button type="button" class="totw-tab${i === 0 ? " active" : ""}" data-idx="${i}">${t.title || ("Состав " + (i + 1))}</button>`
+      ).join("");
+      tabsEl.querySelectorAll(".totw-tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+          tabsEl.querySelectorAll(".totw-tab").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const entry = sorted[Number(btn.dataset.idx)];
+          renderPitch(resolvePlayers(entry), entry.title || "Лучший состав");
+        });
+      });
+    } else {
+      tabsEl.innerHTML = "";
+    }
+  }
 
-  container.querySelectorAll(".pitch-player[data-player-id]").forEach(el => {
-    el.addEventListener("click", () => {
-      const player = globalPlayers.find(p => p.id === el.dataset.playerId);
-      if (player) openPlayerModal(player);
-    });
-  });
+  const current = sorted[0];
+  renderPitch(resolvePlayers(current), current.title || "Лучший состав");
 }
 
 

@@ -759,15 +759,23 @@ function setupTotwForm() {
     if (!title) return showToast("Введите название", true);
     if (!players.length) return showToast("Выберите хотя бы одного игрока", true);
 
-    const data = { title, round, players };
+    const tournamentId = document.getElementById("totwTournament")?.value || "";
+    const kind = document.getElementById("totwKind")?.value || "round";
+    const data = {
+      title,
+      round,
+      players,
+      tournamentId: tournamentId || null,
+      kind
+    };
 
     try {
       if (id) {
         await db.ref("teamOfTheRound/" + id).update(data);
-        showToast("Команда тура обновлена");
+        showToast("Состав обновлён");
       } else {
         await db.ref("teamOfTheRound").push(data);
-        showToast("Команда тура добавлена");
+        showToast("Состав добавлен");
       }
       resetTotwForm();
       await loadAdminData();
@@ -780,19 +788,21 @@ function setupTotwForm() {
 function renderAdminTotw() {
   const tbody = document.querySelector("#adminTotwTable tbody");
   if (!tbody) return;
+  const kindLabel = { round: "Тур", season: "Год/сезон", tournament: "Турнир" };
   tbody.innerHTML = cache.totw
     .sort((a, b) => (b.round || 0) - (a.round || 0))
-    .map(t => `
-      <tr>
+    .map(t => {
+      const tn = cache.tournaments.find(x => x.id === t.tournamentId)?.name || "—";
+      return `<tr>
         <td>${t.round || "—"}</td>
-        <td>${t.title || "—"}</td>
+        <td>${t.title || "—"}<br><small style="opacity:0.65">${kindLabel[t.kind] || "Тур"} · ${tn}</small></td>
         <td>${(t.players || []).length}</td>
         <td>
           <button class="btn-save" style="padding:6px 10px;font-size:0.8rem" onclick="editTotw('${t.id}')">✎</button>
           <button class="btn-danger" onclick="deleteItem('teamOfTheRound','${t.id}')">✕</button>
         </td>
-      </tr>
-    `).join("") || "<tr><td colspan='4' style='text-align:center;opacity:0.5'>Нет команд тура</td></tr>";
+      </tr>`;
+    }).join("") || "<tr><td colspan='4' style='text-align:center;opacity:0.5'>Нет составов</td></tr>";
 }
 
 function editTotw(id) {
@@ -801,9 +811,12 @@ function editTotw(id) {
   document.getElementById("totwId").value = t.id;
   document.getElementById("totwTitle").value = t.title || "";
   document.getElementById("totwRound").value = t.round || 1;
+  const tt = document.getElementById("totwTournament");
+  if (tt) tt.value = t.tournamentId || "";
+  const tk = document.getElementById("totwKind");
+  if (tk) tk.value = t.kind || "round";
   fillTotwCheckboxes(t.players || []);
-  document.getElementById("totwFormTitle").textContent = "Редактировать команду тура";
-  // switch to panel
+  document.getElementById("totwFormTitle").textContent = "Редактировать состав";
   document.querySelectorAll(".admin-nav button").forEach(b => b.classList.remove("active"));
   document.querySelector('[data-panel="totw"]')?.classList.add("active");
   document.querySelectorAll(".admin-panel").forEach(p => p.classList.remove("active"));
@@ -814,7 +827,7 @@ function editTotw(id) {
 function resetTotwForm() {
   document.getElementById("totwForm")?.reset();
   document.getElementById("totwId").value = "";
-  document.getElementById("totwFormTitle").textContent = "Добавить команду тура";
+  document.getElementById("totwFormTitle").textContent = "Добавить лучший состав";
   fillTotwCheckboxes([]);
 }
 
