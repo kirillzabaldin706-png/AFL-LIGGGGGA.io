@@ -171,6 +171,7 @@ async function handleAuthSubmit(e) {
   try {
     if (mode === "register") {
       if (password.length < 6) return showToast("Пароль минимум 6 символов", true);
+      if (password.length < 8) { showToast("Пароль не короче 8 символов", true); return; }
       const cred = await auth.createUserWithEmailAndPassword(email, password);
       if (name) {
         try { await cred.user.updateProfile({ displayName: name }); } catch (_) {}
@@ -411,12 +412,22 @@ async function placeBetDirect(matchId, pick, amount) {
     openAuthModal("login");
     return;
   }
+  if (typeof canPlaceBetNow === "function" && !canPlaceBetNow()) {
+    return showToast("Слишком много ставок. Подождите минуту.", true);
+  }
   if (!pick) return showToast("Выберите исход ставки", true);
+  matchId = String(matchId || "").slice(0, 80);
+  pick = String(pick || "").slice(0, 80);
   amount = Math.floor(Number(amount) || 0);
   if (amount < 10) return showToast("Минимальная ставка 10 ⭐", true);
+  if (amount > 100000) return showToast("Максимум 100000 ⭐ за ставку", true);
   if (amount > (userProfile.stars || 0)) return showToast("Недостаточно звёзд", true);
+  // Матч должен существовать и не быть finished
+  const m = (globalMatchesForBets || []).find(x => x.id === matchId);
+  if (!m || m.status === "finished") return showToast("На этот матч ставки закрыты", true);
 
   const odds = oddsOf(pick);
+  if (odds < 1.01 || odds > 100) return showToast("Некорректный коэффициент", true);
   const newStars = (userProfile.stars || 0) - amount;
   try {
     await db.ref("users/" + currentUser.uid).update({ stars: newStars });
@@ -429,6 +440,7 @@ async function placeBetDirect(matchId, pick, amount) {
       status: "open",
       createdAt: new Date().toISOString()
     });
+    if (typeof securityLog === "function") securityLog("bet", matchId + " " + pick + " " + amount);
     userProfile.stars = newStars;
     updateUserUI();
     showToast("Ставка принята: " + amount + " ⭐ · кэф " + odds);

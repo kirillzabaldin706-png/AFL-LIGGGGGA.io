@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.firebase.com wss://*.firebaseio.com https://api.imgbb.com; frame-src https://www.youtube.com https://player.twitch.tv https://vk.com;">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5">
   <title>АФЛ — Официальный сайт лиги</title>
@@ -120,7 +121,7 @@
 
   <section id="playoffs" class="section">
     <div class="container">
-      <h2 class="section-title">Плей-офф</h2>
+      <h2 class="section-title">Плей-офф и финал</h2>
       <div id="playoffs-root"></div>
     </div>
   </section>
@@ -304,6 +305,7 @@
 </div>
 
 <script src="js/firebase-config.js"></script>
+  <script src="js/security.js"></script>
 <script src="js/standings.js"></script>
 <script src="js/match-poster.js"></script>
 <script src="js/matches.js"></script>

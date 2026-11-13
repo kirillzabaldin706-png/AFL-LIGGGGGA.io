@@ -356,25 +356,52 @@ function renderPlayoffs(matches, teams) {
   const order = ["r16", "qf", "sf", "third", "final"];
   const playoffMatches = matches.filter(m => order.includes(m.stage));
   if (!playoffMatches.length) {
-    root.innerHTML = "<p style='text-align:center;opacity:0.5'>Плей-офф пока не начался. Стадии матчей задаются в админке.</p>";
+    root.innerHTML = "<p style='text-align:center;opacity:0.5'>Плей-офф пока не начался.<br>В админке создайте матч и выберите стадию: 1/8, 1/4, 1/2, матч за 3-е или <b>Финал</b>.</p>";
     return;
   }
   const labels = window.STAGE_LABELS || {
     r16: "1/8 финала", qf: "1/4 финала", sf: "1/2 финала",
-    final: "Финал", third: "Матч за 3-е место"
+    final: "🏆 Финал", third: "Матч за 3-е место"
   };
   let html = "";
+  // Чемпион (если финал сыгран)
+  const finals = playoffMatches.filter(m => m.stage === "final" && m.status === "finished");
+  if (finals.length) {
+    const f = finals.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))[0];
+    const hs = Number(f.homeScore) || 0;
+    const as = Number(f.awayScore) || 0;
+    const home = teams.find(t => t.id === f.homeId);
+    const away = teams.find(t => t.id === f.awayId);
+    let champ = null;
+    if (hs > as) champ = home;
+    else if (as > hs) champ = away;
+    if (champ) {
+      html += `<div class="final-champion-banner">
+        <div class="final-champion-label">Чемпион</div>
+        <img src="${teamLogoUrl(champ)}" alt="" onerror="this.src='https://via.placeholder.com/64?text=FC'">
+        <div class="final-champion-name">${champ.name || "—"}</div>
+        <div class="final-champion-score">${hs} : ${as}</div>
+      </div>`;
+    }
+  }
+
   order.forEach(stage => {
     const list = playoffMatches.filter(m => m.stage === stage)
       .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
     if (!list.length) return;
-    html += `<div class="playoff-round fade-in visible"><h3 class="playoff-round-title">${labels[stage]}</h3><div class="playoff-matches">`;
+    const isFinal = stage === "final";
+    html += `<div class="playoff-round fade-in visible${isFinal ? " playoff-round-final" : ""}">
+      <h3 class="playoff-round-title">${labels[stage]}</h3>
+      <div class="playoff-matches${isFinal ? " playoff-matches-final" : ""}">`;
     list.forEach(m => {
       const home = teams.find(t => t.id === m.homeId);
       const away = teams.find(t => t.id === m.awayId);
       const isFinished = m.status === "finished";
-      const score = isFinished ? `${m.homeScore ?? 0}:${m.awayScore ?? 0}` : "—";
-      html += `<div class="playoff-match-card" data-mid="${m.id}">
+      const live = m.status === "live" || m.live;
+      const score = isFinished
+        ? `${m.homeScore ?? 0}:${m.awayScore ?? 0}`
+        : (live ? "LIVE" : "—");
+      html += `<div class="playoff-match-card${isFinal ? " playoff-match-final" : ""}" data-mid="${m.id}">
         <div class="po-team"><img src="${teamLogoUrl(home)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'"><span>${home?.name || "TBD"}</span></div>
         <div class="po-score">${score}</div>
         <div class="po-team"><img src="${teamLogoUrl(away)}" alt="" onerror="this.src='https://via.placeholder.com/36?text=FC'"><span>${away?.name || "TBD"}</span></div>

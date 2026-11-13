@@ -196,18 +196,23 @@ function renderTeams(teams) {
 function renderNews(news) {
   const list = document.getElementById("news-list");
   if (!list) return;
+  const esc = typeof escapeHtml === "function" ? escapeHtml : (s) => String(s == null ? "" : s);
   const sorted = [...news].sort((a, b) => new Date(b.date) - new Date(a.date));
-  list.innerHTML = sorted.map(n => `
-    <div class="news-card fade-in">
-      <img src="${n.image || "https://via.placeholder.com/400x180?text=News"}" alt=""
+  list.innerHTML = sorted.map(n => {
+    const title = esc(n.title || "");
+    const text = esc((n.text || "").substring(0, 140)) + ((n.text || "").length > 140 ? "..." : "");
+    const img = (typeof safeImgUrl === "function" ? safeImgUrl(n.image) : (n.image || "https://via.placeholder.com/400x180?text=News"));
+    const dateStr = n.date ? new Date(n.date).toLocaleDateString("ru-RU") : "";
+    return `<div class="news-card fade-in">
+      <img src="${esc(img)}" alt="${title}"
            onerror="this.src='https://via.placeholder.com/400x180?text=News'">
       <div class="news-card-body">
-        <div class="news-date">${n.date ? new Date(n.date).toLocaleDateString("ru-RU") : ""}</div>
-        <h3>${n.title}</h3>
-        <p>${(n.text || "").substring(0, 140)}${(n.text || "").length > 140 ? "..." : ""}</p>
+        <div class="news-date">${dateStr}</div>
+        <h3>${title}</h3>
+        <p>${text}</p>
       </div>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
 }
 
 function renderAds(ads) {

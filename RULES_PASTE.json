@@ -1,0 +1,86 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "teams": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "matches": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "players": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "news": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "ads": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "tournaments": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "teamOfTheRound": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "staff": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "shop": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')"
+    },
+    "suggestions": {
+      ".read": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+      ".write": true,
+      "$id": {
+        ".validate": "newData.hasChildren(['text']) && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 2000"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+        ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+        ".validate": "newData.hasChildren(['email']) || data.exists()",
+        "stars": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5000000 && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru' || !data.exists() && newData.val() <= 1000 || data.exists() && newData.val() <= data.val() + 200000)"
+        },
+        "bonusGiven": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "bets": {
+      ".read": "auth != null",
+      "$betId": {
+        ".read": "auth != null && (data.child('userId').val() == auth.uid || auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+        ".write": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru' || (!data.exists() && newData.child('userId').val() == auth.uid && newData.child('status').val() == 'open') || (data.exists() && data.child('userId').val() == auth.uid))",
+        ".validate": "newData.hasChildren(['userId', 'matchId', 'pick', 'amount', 'odds', 'status']) && newData.child('amount').isNumber() && newData.child('amount').val() >= 10 && newData.child('amount').val() <= 100000 && newData.child('odds').isNumber() && newData.child('odds').val() >= 1.01 && newData.child('odds').val() <= 100"
+      }
+    },
+    "purchases": {
+      ".read": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+      "$id": {
+        ".write": "auth != null && newData.child('userId').val() == auth.uid",
+        ".validate": "newData.hasChildren(['userId', 'itemId'])"
+      }
+    },
+    "securityLog": {
+      ".read": "auth != null && (auth.token.email == 'AFL-LIGA@mail.ru' || auth.token.email == 'afl-liga@mail.ru')",
+      ".write": "auth != null"
+    }
+  }
+}

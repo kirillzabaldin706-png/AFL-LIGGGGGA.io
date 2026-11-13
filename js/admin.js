@@ -14,6 +14,14 @@ function checkIsAdmin(user) {
   return list.includes(email);
 }
 
+function requireAdminLive() {
+  const u = auth.currentUser;
+  if (!u || (typeof isAdminUser === "function" && !isAdminUser(u))) {
+    showToast("Сессия админа недействительна", true);
+    throw new Error("not admin");
+  }
+}
+
 let cache = { teams: [], matches: [], players: [], news: [], ads: [], tournaments: [], totw: [], staff: [], suggestions: [] };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -217,8 +225,8 @@ function setupTeamForm() {
     if (file) { showToast("Загрузка..."); logo = await uploadToImgbb(file) || logo; }
     const data = { name, city, logo: logo || "" };
     try {
-      if (id) { await db.ref("teams/" + id).update(data); showToast("Обновлено"); }
-      else { await db.ref("teams").push(data); showToast("Добавлено"); }
+      if (id) { requireAdminLive(); await db.ref("teams/" + id).update(data); showToast("Обновлено"); }
+      else { requireAdminLive(); await db.ref("teams").push(data); showToast("Добавлено"); }
       resetTeamForm(); await loadAdminData();
     } catch (err) { showToast(err.message, true); }
   });
@@ -301,8 +309,8 @@ function setupMatchForm() {
     };
     if (!data.tournamentId) data.tournamentId = null;
     try {
-      if (id) { await db.ref("matches/" + id).update(data); showToast("Обновлено"); }
-      else { await db.ref("matches").push(data); showToast("Добавлено"); }
+      if (id) { requireAdminLive(); await db.ref("matches/" + id).update(data); showToast("Обновлено"); }
+      else { requireAdminLive(); await db.ref("matches").push(data); showToast("Добавлено"); }
       resetMatchForm(); await loadAdminData();
     } catch (err) { showToast(err.message, true); }
   });
