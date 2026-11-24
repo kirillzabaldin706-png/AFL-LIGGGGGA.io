@@ -60,7 +60,6 @@
       <button data-panel="shop">🛒 Магазин</button>
       <button data-panel="users">⭐ Звёзды / Юзеры</button>
       <button data-panel="adminBets">🎲 Ставки</button>
-      <button data-panel="assistant">🤖 Помощник</button>
       <hr style="border-color:rgba(255,255,255,0.1);margin:12px 10px">
       <button id="logoutBtn" style="color:#f87171">🚪 Выйти</button>
       <a href="index.html" style="color:rgba(255,255,255,0.55);padding:11px 14px;text-decoration:none;font-size:0.85rem;display:block">← На сайт</a>
@@ -560,45 +559,41 @@
         <tbody></tbody>
       </table></div>
     </div>
-
-
-    <div id="panel-assistant" class="admin-panel">
-      <div class="admin-form assistant-wrap">
-        <h3>🤖 Помощник админа</h3>
-        <p style="font-size:0.9rem;opacity:0.75;margin:0 0 12px;line-height:1.45">
-          Пишите обычным текстом — помощник заполнит статистику, результат матча или поставит фото игроку.
-          Фото: прикрепите файл или вставьте ссылку, затем укажите кому.
-        </p>
-        <div id="assistantChat" class="assistant-chat"></div>
-        <div class="assistant-upload-row">
-          <label class="upload-btn">📷 Фото в чат<input type="file" id="assistantPhotoFile" accept="image/*"></label>
-          <span id="assistantPhotoName" style="font-size:0.85rem;opacity:0.7"></span>
-        </div>
-        <div class="assistant-input-row">
-          <input type="text" id="assistantInput" placeholder="Например: результат Шторм Инфинити 2:1" autocomplete="off">
-          <button type="button" class="btn-save" id="assistantSend">Отправить</button>
-        </div>
-        <details style="margin-top:14px">
-          <summary style="cursor:pointer;font-weight:600">Примеры команд</summary>
-          <ul style="font-size:0.88rem;line-height:1.55;margin:10px 0 0;padding-left:18px;opacity:0.9">
-            <li><code>результат КомандаА КомандаБ 3:1</code> — счёт и статус «завершён»</li>
-            <li><code>пенки 4:3</code> — серия пенальти у выбранного/последнего матча</li>
-            <li><code>гол Иванов</code> или <code>гол Иванов +2</code> — голы игроку</li>
-            <li><code>пас Петров</code> — ассист</li>
-            <li><code>фото игроку Иванов</code> — после выбора фото выше</li>
-            <li><code>матч КомандаА - КомандаБ завтра 18:00</code> — создать матч</li>
-            <li><code>помощь</code> — список команд</li>
-          </ul>
-        </details>
-      </div>
-    </div>
-
-  </main>
+</main>
 </div>
 
 <script src="js/firebase-config.js"></script>
   <script src="js/security.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/admin-assistant.js"></script>
+
+<!-- Плавающий помощник -->
+<div id="aflBotRoot" class="afl-bot-root" aria-live="polite">
+  <div id="aflBotPanel" class="afl-bot-panel" hidden>
+    <div class="afl-bot-head">
+      <div class="afl-bot-avatar">🤖</div>
+      <div>
+        <div class="afl-bot-title">АФЛ Помощник</div>
+        <div class="afl-bot-sub">Статистика · фото · матчи</div>
+      </div>
+      <button type="button" class="afl-bot-close" id="aflBotClose" aria-label="Закрыть">×</button>
+    </div>
+    <div class="afl-bot-suggestions" id="aflBotSuggestions"></div>
+    <div id="assistantChat" class="afl-bot-chat"></div>
+    <div class="afl-bot-upload">
+      <label class="afl-bot-file">📷<input type="file" id="assistantPhotoFile" accept="image/*" hidden></label>
+      <span id="assistantPhotoName" class="afl-bot-file-name"></span>
+    </div>
+    <div class="afl-bot-input-row">
+      <input type="text" id="assistantInput" placeholder="Напишите команду…" autocomplete="off">
+      <button type="button" class="afl-bot-send" id="assistantSend">➤</button>
+    </div>
+  </div>
+  <button type="button" id="aflBotFab" class="afl-bot-fab" aria-label="Открыть помощника">
+    <span class="afl-bot-fab-icon">🤖</span>
+    <span class="afl-bot-fab-pulse"></span>
+  </button>
+</div>
+
 </body>
 </html>
