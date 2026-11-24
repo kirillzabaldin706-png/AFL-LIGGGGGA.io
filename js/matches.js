@@ -91,7 +91,10 @@ function matchCardHTML(m, teams) {
   const home = (teams || []).find(t => t.id === m.homeId);
   const away = (teams || []).find(t => t.id === m.awayId);
   const isFinished = m.status === "finished";
-  const score = isFinished ? `${m.homeScore ?? 0} : ${m.awayScore ?? 0}` : "vs";
+  let score = isFinished ? `${m.homeScore ?? 0} : ${m.awayScore ?? 0}` : "vs";
+  if (isFinished && m.homePenalties != null && m.awayPenalties != null && m.homePenalties !== "" && m.awayPenalties !== "") {
+    score += ` <span class="pen-score">(пен. ${m.homePenalties}:${m.awayPenalties})</span>`;
+  }
   let dateStr = "";
   try {
     if (m.date) {
@@ -162,6 +165,7 @@ function openMatchModal(m, home, away) {
     : `<div style="font-size:1.4rem;font-weight:700;margin:8px 0;opacity:0.6">vs</div>`;
 
   const stats = [
+    { lbl: "Пенальти", h: m.homePenalties, a: m.awayPenalties },
     { lbl: "Владение %", h: m.homePossession, a: m.awayPossession },
     { lbl: "Удары", h: m.homeShots, a: m.awayShots },
     { lbl: "Удары в створ", h: m.homeShotsOn, a: m.awayShotsOn },

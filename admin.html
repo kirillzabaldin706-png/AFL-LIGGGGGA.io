@@ -60,6 +60,7 @@
       <button data-panel="shop">🛒 Магазин</button>
       <button data-panel="users">⭐ Звёзды / Юзеры</button>
       <button data-panel="adminBets">🎲 Ставки</button>
+      <button data-panel="assistant">🤖 Помощник</button>
       <hr style="border-color:rgba(255,255,255,0.1);margin:12px 10px">
       <button id="logoutBtn" style="color:#f87171">🚪 Выйти</button>
       <a href="index.html" style="color:rgba(255,255,255,0.55);padding:11px 14px;text-decoration:none;font-size:0.85rem;display:block">← На сайт</a>
@@ -124,6 +125,11 @@
             <div class="form-group"><label>Голы хозяев</label><input type="number" id="matchHomeScore" min="0" value="0"></div>
             <div class="form-group"><label>Голы гостей</label><input type="number" id="matchAwayScore" min="0" value="0"></div>
           </div>
+          <div class="form-row">
+            <div class="form-group"><label>Пенальти хозяева (серия)</label><input type="number" id="matchHomePen" min="0" placeholder="—"></div>
+            <div class="form-group"><label>Пенальти гости (серия)</label><input type="number" id="matchAwayPen" min="0" placeholder="—"></div>
+          </div>
+          <p style="font-size:0.8rem;opacity:0.65;margin:-6px 0 12px">«Пенки» — счёт по серии пенальти (если была). Основной счёт выше.</p>
           <div class="form-row">
             <div class="form-group"><label>Дата и время</label><input type="datetime-local" id="matchDate"></div>
             <div class="form-group"><label>Статус</label>
@@ -555,11 +561,44 @@
       </table></div>
     </div>
 
+
+    <div id="panel-assistant" class="admin-panel">
+      <div class="admin-form assistant-wrap">
+        <h3>🤖 Помощник админа</h3>
+        <p style="font-size:0.9rem;opacity:0.75;margin:0 0 12px;line-height:1.45">
+          Пишите обычным текстом — помощник заполнит статистику, результат матча или поставит фото игроку.
+          Фото: прикрепите файл или вставьте ссылку, затем укажите кому.
+        </p>
+        <div id="assistantChat" class="assistant-chat"></div>
+        <div class="assistant-upload-row">
+          <label class="upload-btn">📷 Фото в чат<input type="file" id="assistantPhotoFile" accept="image/*"></label>
+          <span id="assistantPhotoName" style="font-size:0.85rem;opacity:0.7"></span>
+        </div>
+        <div class="assistant-input-row">
+          <input type="text" id="assistantInput" placeholder="Например: результат Шторм Инфинити 2:1" autocomplete="off">
+          <button type="button" class="btn-save" id="assistantSend">Отправить</button>
+        </div>
+        <details style="margin-top:14px">
+          <summary style="cursor:pointer;font-weight:600">Примеры команд</summary>
+          <ul style="font-size:0.88rem;line-height:1.55;margin:10px 0 0;padding-left:18px;opacity:0.9">
+            <li><code>результат КомандаА КомандаБ 3:1</code> — счёт и статус «завершён»</li>
+            <li><code>пенки 4:3</code> — серия пенальти у выбранного/последнего матча</li>
+            <li><code>гол Иванов</code> или <code>гол Иванов +2</code> — голы игроку</li>
+            <li><code>пас Петров</code> — ассист</li>
+            <li><code>фото игроку Иванов</code> — после выбора фото выше</li>
+            <li><code>матч КомандаА - КомандаБ завтра 18:00</code> — создать матч</li>
+            <li><code>помощь</code> — список команд</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <script src="js/firebase-config.js"></script>
   <script src="js/security.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/admin-assistant.js"></script>
 </body>
 </html>

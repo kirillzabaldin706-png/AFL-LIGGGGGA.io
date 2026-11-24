@@ -159,6 +159,7 @@ async function loadAdminData() {
       return t;
     });
     cache.totw = Object.entries(totwVal).map(([id, v]) => ({ id, ...v }));
+    window.cache = cache;
     cache.staff = Object.entries(staffVal).map(([id, v]) => ({ id, ...v }));
     cache.suggestions = [];
 
@@ -305,7 +306,9 @@ function setupMatchForm() {
       tournamentId: document.getElementById("matchTournament")?.value || "",
       stage: document.getElementById("matchStage")?.value || "regular",
       streamUrl: document.getElementById("matchStreamUrl")?.value?.trim() || "",
-      featured: !!document.getElementById("matchFeatured")?.checked
+      featured: !!document.getElementById("matchFeatured")?.checked,
+      homePenalties: num("matchHomePen"),
+      awayPenalties: num("matchAwayPen")
     };
     if (!data.tournamentId) data.tournamentId = null;
     try {
@@ -324,7 +327,11 @@ function renderAdminMatches() {
     .map(m => {
       const home = cache.teams.find(t => t.id === m.homeId)?.name || "?";
       const away = cache.teams.find(t => t.id === m.awayId)?.name || "?";
-      const score = m.status === "finished" ? `${m.homeScore}:${m.awayScore}` : "—";
+      let score = m.status === "finished" ? `${m.homeScore}:${m.awayScore}` : "—";
+      if (m.status === "finished" && (m.homePenalties != null || m.awayPenalties != null) && (m.homePenalties !== "" || m.awayPenalties !== "")) {
+        const hp = m.homePenalties, ap = m.awayPenalties;
+        if (hp != null && ap != null) score += ` (пен. ${hp}:${ap})`;
+      }
       const tn = cache.tournaments.find(t => t.id === m.tournamentId)?.name || "—";
       const stMap = {regular:"Группа",r16:"1/8",qf:"1/4",sf:"1/2",final:"Финал",third:"3-е",group:"Группа"};
       const st = stMap[m.stage] || m.stage || "—";
@@ -373,6 +380,8 @@ function editMatch(id) {
   set("matchHomeRed", m.homeRed);
   set("matchAwayRed", m.awayRed);
   set("matchScorers", m.scorers);
+  set("matchHomePen", m.homePenalties);
+  set("matchAwayPen", m.awayPenalties);
   document.getElementById("matchFormTitle").textContent = "Редактировать матч";
 }
 

@@ -1256,3 +1256,22 @@ nav a{width:100%;text-align:center;padding:14px;color:var(--text)}
 .playoff-matches-final {
   justify-content: center;
 }
+
+.pen-score { font-size: 0.75em; opacity: 0.75; font-weight: 600; }
+.assistant-wrap { max-width: 720px; }
+.assistant-chat {
+  height: 360px; overflow-y: auto; border: 1px solid var(--border,#e2e8f0);
+  border-radius: 12px; padding: 12px; background: #f8fafc; margin-bottom: 10px;
+}
+.assistant-msg { margin-bottom: 10px; max-width: 92%; }
+.assistant-msg.user { margin-left: auto; text-align: right; }
+.assistant-msg .bubble {
+  display: inline-block; padding: 10px 14px; border-radius: 12px;
+  font-size: 0.92rem; line-height: 1.4; text-align: left;
+}
+.assistant-msg.bot .bubble { background: #fff; border: 1px solid var(--border,#e2e8f0); }
+.assistant-msg.user .bubble { background: var(--primary,#1e3a5f); color: #fff; }
+.assistant-msg .bubble pre { white-space: pre-wrap; margin: 0; font-family: inherit; }
+.assistant-input-row { display: flex; gap: 8px; }
+.assistant-input-row input { flex: 1; }
+.assistant-upload-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
