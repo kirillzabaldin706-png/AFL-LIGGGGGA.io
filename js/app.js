@@ -1,3 +1,5 @@
+window.AFL_DEBUG = false;
+if (!window.AFL_DEBUG) { const _c = console.log; console.log = function(){}; }
 // Глобальные данные для модалок
 let globalTeams = [];
 let globalPlayers = [];
@@ -656,3 +658,20 @@ try {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initImageLightbox);
   else initImageLightbox();
 } catch (e) {}
+
+
+// Админка: кнопка только для админа (после входа)
+(function hideAdminForPublic() {
+  function sync() {
+    const btn = document.getElementById("adminPanelBtn") || document.querySelector('a[href="admin.html"], a[href*="admin"]');
+    const user = typeof auth !== "undefined" && auth.currentUser;
+    const ok = user && typeof isAdminUser === "function" && isAdminUser(user);
+    document.querySelectorAll('a[href="admin.html"], a[href="./admin.html"], #adminPanelBtn, .btn-admin-mobile').forEach(el => {
+      el.style.display = ok ? "" : "none";
+    });
+  }
+  if (typeof auth !== "undefined") {
+    auth.onAuthStateChanged(sync);
+  }
+  document.addEventListener("DOMContentLoaded", sync);
+})();

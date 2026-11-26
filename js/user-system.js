@@ -1,3 +1,5 @@
+window.AFL_DEBUG = false;
+if (!window.AFL_DEBUG) { const _c = console.log; console.log = function(){}; }
 // ============================================
 // USER SYSTEM: регистрация, звёзды, ставки, магазин
 // ============================================
@@ -163,6 +165,10 @@ function openAuthModal(mode) {
 
 async function handleAuthSubmit(e) {
   e.preventDefault();
+  if (typeof loginAttemptAllowed === "function" && !loginAttemptAllowed()) {
+    showToast("Слишком много попыток входа. Подождите 15 минут.", true);
+    return;
+  }
   const mode = document.getElementById("authMode").value;
   const email = document.getElementById("authEmail").value.trim();
   const password = document.getElementById("authPassword").value;
@@ -172,6 +178,7 @@ async function handleAuthSubmit(e) {
     if (mode === "register") {
       if (password.length < 6) return showToast("Пароль минимум 6 символов", true);
       if (password.length < 8) { showToast("Пароль не короче 8 символов", true); return; }
+      if (password.length > 128) { showToast("Пароль слишком длинный", true); return; }
       const cred = await auth.createUserWithEmailAndPassword(email, password);
       if (name) {
         try { await cred.user.updateProfile({ displayName: name }); } catch (_) {}
@@ -194,6 +201,7 @@ async function handleAuthSubmit(e) {
       showToast("Регистрация успешна! +" + REG_BONUS + " ⭐");
     } else {
       await auth.signInWithEmailAndPassword(email, password);
+      if (typeof recordLoginAttempt === "function") recordLoginAttempt(true);
       showToast("Вход выполнен");
     }
     document.getElementById("authModal")?.classList.remove("active");
@@ -539,11 +547,12 @@ async function settleOpenBets() {
     }
 
     if (starsDelta > 0) {
-      const newStars = currentStars + starsDelta;
-      await db.ref("users/" + currentUser.uid).update({ stars: newStars });
-      if (userProfile) userProfile.stars = newStars;
-      updateUserUI();
-      showToast("Выигрыш по ставкам: +" + starsDelta + " ⭐");
+      // Rules: обычный пользователь не может сам увеличить stars (анти-фрод).
+      // Выигрыш начисляет админ вручную или Cloud Function.
+      showToast("Ставки рассчитаны. Выигрыш +" + starsDelta + " ⭐ начислит администратор.");
+      if (typeof securityLog === "function") {
+        securityLog("bet_win_pending", String(starsDelta));
+      }
     } else if (settledIds.length) {
       updateUserUI();
     }
@@ -600,20 +609,26 @@ function renderShop() {
     el.innerHTML = "<p class='empty-hint'>Магазин пуст. Товары добавляются в админке.</p>";
     return;
   }
-  el.innerHTML = globalShop.map(p => `
-    <div class="shop-card">
-      <img src="${p.image || "https://via.placeholder.com/200x140?text=Товар"}" alt=""
-           onerror="this.src='https://via.placeholder.com/200x140?text=Товар'">
+  const esc = typeof escapeHtml === "function" ? escapeHtml : (s) => String(s == null ? "" : s);
+  el.innerHTML = globalShop.map(p => {
+    const name = esc(p.name || "");
+    const desc = esc(p.description || "");
+    const img = typeof safeImgUrl === "function" ? safeImgUrl(p.image) : (p.image || "https://via.placeholder.com/200x140?text=Item");
+    const price = Math.max(0, Math.min(1000000, Number(p.price) || 0));
+    const id = esc(p.id || "");
+    return `<div class="shop-card">
+      <img src="${esc(img)}" alt=""
+           onerror="this.src='https://via.placeholder.com/200x140?text=Item'">
       <div class="shop-body">
-        <h3>${p.name}</h3>
-        <p>${p.description || ""}</p>
+        <h3>${name}</h3>
+        <p>${desc}</p>
         <div class="shop-footer">
-          <span class="shop-price">${p.price || 0} ⭐</span>
-          <button type="button" class="btn-save shop-buy" data-id="${p.id}">Купить</button>
+          <span class="shop-price">${price} ⭐</span>
+          <button type="button" class="btn-save shop-buy" data-id="${id}">Купить</button>
         </div>
       </div>
-    </div>
-  `).join("");
+    </div>`;
+  }).join("");
 
   el.querySelectorAll(".shop-buy").forEach(btn => {
     btn.addEventListener("click", () => buyProduct(btn.dataset.id));
@@ -628,8 +643,10 @@ async function buyProduct(productId) {
   }
   const product = globalShop.find(p => p.id === productId);
   if (!product) return;
-  const price = Number(product.price) || 0;
+  const price = Math.max(0, Math.min(1000000, Number(product.price) || 0));
+  if (price <= 0) return showToast("Товар недоступен", true);
   if (price > (userProfile.stars || 0)) return showToast("Недостаточно звёзд", true);
+  if (typeof canSubmitForm === "function" && !canSubmitForm()) return showToast("Слишком много запросов", true);
 
   const newStars = (userProfile.stars || 0) - price;
   try {

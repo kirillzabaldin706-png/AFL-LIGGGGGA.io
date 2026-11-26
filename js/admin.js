@@ -1,3 +1,5 @@
+window.AFL_DEBUG = false;
+if (!window.AFL_DEBUG) { const _c = console.log; console.log = function(){}; }
 let currentUser = null;
 
 /** Строгая проверка: в админку только email из списка. */

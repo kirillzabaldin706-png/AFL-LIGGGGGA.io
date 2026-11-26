@@ -55,6 +55,13 @@
 
   async function uploadToImgbb(file) {
     if (!file) return null;
+    if (typeof validateImageFile === "function") {
+      var check = validateImageFile(file);
+      if (!check.ok) {
+        if (typeof showToast === "function") showToast(check.error || "Файл отклонён", true);
+        return null;
+      }
+    }
     var formData = new FormData();
     formData.append("image", file);
     try {
